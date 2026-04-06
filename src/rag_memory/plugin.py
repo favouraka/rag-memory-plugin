@@ -99,12 +99,12 @@ def register(context: Any) -> None:
         data_dir = hermes_home / "plugins" / "rag-memory"
 
         _rag = RAGCore(
-            db_path=str(data_dir / "rag_memory.db"),
+            db_path=str(data_dir / "rag_core.db"),
             mode=_config.get("mode", "hybrid"),
             cache_enabled=_config.get("cache_enabled", True),
             cache_ttl=_config.get("cache_ttl", 300),
         )
-        _rag.initialize()
+        # RAGCore initializes automatically in __init__
 
         _initialized = True
         logger.info("✓ RAG Memory plugin initialized")
