@@ -237,20 +237,8 @@ rag-memory import-data backup.json
 The migration script:
 1. Connects to `~/rag-system/rag_data.db`
 2. Exports all documents with embeddings
-3. Imports to `~/.hermes/plugins/rag-memory/rag_memory.db`
+3. Imports to `~/.hermes/plugins/rag-memory/rag_core.db`
 4. Verifies data integrity
-
-## Comparison with hermes-katana
-
-| Feature | hermes-katana | rag-memory-plugin |
-|---------|--------------|-------------------|
-| Purpose | Security middleware | Memory/retrieval |
-| Packaging | ✅ pip + entry points | ✅ pip + entry points |
-| CLI Tools | katana doctor, scan | rag-memory doctor, search |
-| Data Migration | ❌ No | ✅ Yes |
-| Auto Model Download | ❌ No | ✅ Yes |
-| Heavy Dependencies | mitmproxy, docker | scikit-learn only |
-| Graceful Fallback | ✅ Passthrough mode | ✅ TF-IDF fallback |
 
 ## License
 
