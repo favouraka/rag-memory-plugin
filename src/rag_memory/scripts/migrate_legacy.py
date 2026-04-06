@@ -133,7 +133,7 @@ def import_to_plugin(
 
         plugin_db_path.parent.mkdir(parents=True, exist_ok=True)
         rag = RAGCore(str(plugin_db_path))
-        rag.initialize()
+        # RAGCore initializes automatically in __init__
 
     except ImportError:
         logger.error("✗ RAG Memory plugin not installed")

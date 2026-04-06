@@ -154,7 +154,7 @@ def migrate_from_legacy() -> None:
 
         # Initialize new database
         rag = RAGCore(str(new_db))
-        rag.initialize()
+        # RAGCore initializes automatically in __init__
 
         console.print(f"[cyan]Legacy DB:[/cyan] {legacy_db}")
         console.print(f"[cyan]New DB:[/cyan] {new_db}")
@@ -215,7 +215,8 @@ def import_data(input: Path) -> None:
         # Initialize if needed
         rag = RAGCore(str(db_path))
         if not db_path.exists():
-            rag.initialize()
+            # RAGCore initializes automatically in __init__
+            pass
 
         # Load JSON
         with open(input) as f:
