@@ -1,5 +1,10 @@
 # RAG Memory Plugin for Hermes Agent
 
+[![PyPI version](https://badge.fury.io/py/rag-memory-plugin.svg)](https://badge.fury.io/py/rag-memory-plugin)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![GitHub](https://img.shields.io/badge/github-favouraka%2Frag--memory--plugin-blue.svg)](https://github.com/favouraka/rag-memory-plugin)
+
 Production-grade Retrieval-Augmented Generation memory system with hybrid TF-IDF + Neural search, automatic context injection, and zero-configuration setup.
 
 ## Features
