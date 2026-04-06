@@ -146,5 +146,3 @@ cython_debug/
 .DS_Store
 Thumbs.db
 
-# Documentation (kept separate for cleaner repo)
-docs/
