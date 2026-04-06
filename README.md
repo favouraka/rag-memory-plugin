@@ -19,7 +19,14 @@ Production-grade Retrieval-Augmented Generation memory system with hybrid TF-IDF
 
 ## Installation
 
-### From PyPI (Recommended)
+### From GitHub (Recommended ⭐)
+```bash
+pip install git+https://github.com/favouraka/rag-memory-plugin.git[neural]
+```
+
+**Why GitHub?** PyPI has compatibility issues with modern Python packaging metadata (PEP 639). GitHub installation is simpler and always installs the latest version.
+
+### From PyPI (Coming Soon)
 ```bash
 # Basic (TF-IDF only)
 pip install rag-memory-plugin
@@ -28,29 +35,22 @@ pip install rag-memory-plugin
 pip install rag-memory-plugin[neural]
 ```
 
-### From GitHub (Latest Development Version)
-```bash
-# Install directly from GitHub
-pip install git+https://github.com/favouraka/rag-memory-plugin.git[neural]
-
-# Or clone and install in editable mode
-git clone https://github.com/favouraka/rag-memory-plugin.git
-cd rag-memory-plugin
-pip install -e ".[neural]"
-```
+*Note: PyPI publishing is pending PyPI support for PEP 639 metadata. Use GitHub installation for now.*
 
 ## Quick Start
 
 ### 1. Install Plugin
 
-**From PyPI:**
-```bash
-pip install rag-memory-plugin[neural]
-```
-
-**From GitHub:**
+**From GitHub (Recommended):**
 ```bash
 pip install git+https://github.com/favouraka/rag-memory-plugin.git[neural]
+```
+
+**Or clone and install in editable mode:**
+```bash
+git clone https://github.com/favouraka/rag-memory-plugin.git
+cd rag-memory-plugin
+pip install -e ".[neural]"
 ```
 
 ### 2. Migrate Existing Data (Optional)
