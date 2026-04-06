@@ -1,155 +1,253 @@
 # RAG Memory Plugin for Hermes Agent
 
-[![PyPI version](https://badge.fury.io/py/rag-memory-plugin.svg)](https://badge.fury.io/py/rag-memory-plugin)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/github-favouraka%2Frag--memory--plugin-blue.svg)](https://github.com/favouraka/rag-memory-plugin)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/favouraka/rag-memory-plugin)
 
-Production-grade Retrieval-Augmented Generation memory system with hybrid TF-IDF + Neural search, automatic context injection, and zero-configuration setup.
+**Production-grade Retrieval-Augmented Generation memory system** with hybrid TF-IDF + Neural search, automatic context injection, interactive setup, and comprehensive backup/recovery capabilities.
 
-## Features
+## ✨ Features
 
-- **🔍 Hybrid Search**: TF-IDF + Neural retrieval with sqlite-vec and sentence-transformers
-- **🪝 Auto-Capture**: Hooks inject relevant context before LLM calls, capture responses after
-- **🏷️ Namespace Isolation**: Separate memory spaces for conversations, files, projects
-- **⚡ Performance**: Query caching, connection pooling, lazy loading
-- **🔧 Zero-Config**: Works out of the box, graceful fallback when models unavailable
-- **📦 Pip Installable**: Standard Python package with entry points
-- **🚀 Fast**: <2ms search time, 40-60% cache hit rate
+- 🔍 **Hybrid Search**: TF-IDF + Neural retrieval with sqlite-vec and sentence-transformers
+- 🪝 **Auto-Capture**: Hooks inject relevant context before LLM calls, capture responses after
+- 🏷️ **Namespace Isolation**: Separate memory spaces for conversations, files, projects
+- ⚡ **Performance**: Query caching, connection pooling, lazy loading (<2ms search time)
+- 🔧 **Zero-Config**: Interactive setup wizard, works out of the box
+- 💾 **Backup Management**: Create, list, restore, and delete database backups
+- 🚑 **Auto-Recovery**: Automatic database corruption detection and recovery
+- 📝 **File Indexing**: Index files and directories for semantic search
+- 🔄 **Migration**: Migrate data from legacy installations or other databases
+- 🛠️ **20+ CLI Commands**: Comprehensive command-line interface
+- 📦 **Pip Installable**: Standard Python package with entry points
 
-## Installation
+## 🚀 Installation
 
-### From GitHub (Recommended ⭐)
+### Method 1: Installation Script (Recommended ⭐)
+
+**Easiest method - automatically detects your environment:**
+
 ```bash
-pip install git+https://github.com/favouraka/rag-memory-plugin.git[neural]
+curl -sSL https://raw.githubusercontent.com/favouraka/rag-memory-plugin/main/install.sh | bash
 ```
 
-**Why GitHub?** PyPI has compatibility issues with modern Python packaging metadata (PEP 639). GitHub installation is simpler and always installs the latest version.
+**What it does:**
+- Checks Python version (requires 3.10+)
+- Detects your Python environment
+- Installs using the best method for your system:
+  1. User-space installation (`pip install --user`)
+  2. Virtual environment (`~/.hermes-venv`)
+  3. System installation (as last resort)
+- Runs setup wizard automatically
+- Verifies installation
 
-### From PyPI (Coming Soon)
+### Method 2: Manual Installation
+
+**Install from GitHub:**
+
 ```bash
-# Basic (TF-IDF only)
-pip install rag-memory-plugin
+# With neural search (recommended)
+pip install --user git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
 
-# Full (with Neural Search)
-pip install rag-memory-plugin[neural]
+# Or with virtual environment
+python3 -m venv ~/.hermes-venv
+source ~/.hermes-venv/bin/activate
+pip install git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
 ```
 
-*Note: PyPI publishing is pending PyPI support for PEP 639 metadata. Use GitHub installation for now.*
+### Method 3: Clone and Install
 
-## Quick Start
-
-### 1. Install Plugin
-
-**From GitHub (Recommended):**
-```bash
-pip install git+https://github.com/favouraka/rag-memory-plugin.git[neural]
-```
-
-**Or clone and install in editable mode:**
 ```bash
 git clone https://github.com/favouraka/rag-memory-plugin.git
 cd rag-memory-plugin
 pip install -e ".[neural]"
 ```
 
-### 2. Migrate Existing Data (Optional)
-If you have a legacy ~/rag-system installation:
+---
+
+## 📚 Quick Start
+
+### 1. Run Setup Wizard
 
 ```bash
-rag-memory migrate-from-legacy
+rag-memory setup
 ```
 
-### 3. Verify Installation
+The setup wizard will:
+- ✅ Create database directory
+- ✅ Initialize SQLite database
+- ✅ Check dependencies (sqlite-vec, neural model)
+- ✅ Create configuration file
+- ✅ Guide you through optional features
+
+**Non-interactive mode:**
+```bash
+rag-memory setup --skip-prompts
+```
+
+### 2. Verify Installation
+
 ```bash
 rag-memory doctor
+rag-memory status
 ```
 
-Output:
-```
-✓ Database: /home/user/.hermes/plugins/rag-memory/rag_memory.db
-✓ Documents: 168
-✓ Embeddings: 168
-✓ Mode: hybrid
-```
-
-### 4. Restart Hermes
-The plugin auto-discovers via entry points. Just restart Hermes:
+### 3. Index Your Files (Optional)
 
 ```bash
-hermes
+# Index a single file
+rag-memory index ~/Documents/notes.md --namespace personal
+
+# Index a directory
+rag-memory index ~/Projects/ --namespace work
+
+# Index Hermes memory files
+rag-memory index-files
 ```
 
-You should see in the banner:
-```
-Plugins (1): ✓ rag-memory v1.0.0 (4 tools, 4 hooks)
-```
+### 4. Search Your Memory
 
-## Usage
-
-### Via Hermes Tools
-
-The plugin registers 4 tools that Hermes can use:
-
-```text
-rag_search: Search memory by semantic similarity
-rag_add_document: Add document to memory
-rag_stats: Show database statistics
-rag_flush: Flush write buffers
+```bash
+rag-memory search "what did we work on yesterday?"
+rag-memory search "AI agent" --namespace work --limit 5
 ```
 
-Example in Hermes:
-```
-You: What did we work on yesterday?
-Hermes: [Uses rag_search tool] Let me check... [Retrieves relevant context]
+---
+
+## 💻 Command Reference
+
+### Setup & Installation
+
+```bash
+# Interactive setup
+rag-memory setup [--skip-prompts] [--reinit] [--sqlite-vec] [--neural]
+
+# Install neural dependencies
+rag-memory install neural [--force]
 ```
 
-### Via Command Line
+### Diagnostics
+
+```bash
+# Full health check
+rag-memory doctor
+
+# Quick status check
+rag-memory status [--json] [--quiet]
+
+# Exit codes: 0=healthy, 1=warning, 2=error
+```
+
+### Configuration
+
+```bash
+# View configuration
+rag-memory config show
+
+# Edit in $EDITOR
+rag-memory config edit
+
+# Set value
+rag-memory config set database.path /custom/path
+rag-memory config set search.max_results 20
+
+# Reset to defaults
+rag-memory config reset
+
+# Validate configuration
+rag-memory config validate
+```
+
+### Search & Index
 
 ```bash
 # Search memory
-rag-memory search "AI agent"
+rag-memory search "query" [--namespace] [--limit]
 
-# Health check
-rag-memory doctor
+# Index file or directory
+rag-memory index <path> [--namespace] [--chunk-size] [--force]
 
-# Export data
-rag-memory export backup.json
-
-# Import data
-rag-memory import-data backup.json
+# Index Hermes files
+rag-memory index-files [--pattern] [--chunk-size] [--force]
 ```
 
-### As a Python Library
+### Backup Management
 
-```python
-from rag_memory import RAGCore
+```bash
+# Create backup
+rag-memory backup create [--description "Before changes"]
 
-# Initialize
-rag = RAGCore()
-rag.initialize()
+# List backups
+rag-memory backup list [--json]
 
-# Add document
-rag.add_document(
-    content="Hermes is an AI agent",
-    namespace="test",
-    metadata={"source": "user"}
-)
+# Restore from backup
+rag-memory backup restore <backup_file> [--force] [--backup-current]
 
-# Search
-results = rag.search(
-    "AI agent",
-    namespace="test",
-    limit=5
-)
-
-for result in results:
-    print(f"{result['score']:.2f}: {result['content'][:100]}")
+# Delete backup
+rag-memory backup delete <backup_file> [--force]
 ```
 
-## Configuration
+### Recovery & Reset
 
-Plugin configuration in Hermes `~/.hermes/config.yaml`:
+```bash
+# Auto-recovery from corruption
+rag-memory recover [--backup-corrupted] [--from-backup <file>]
+
+# Reset database (with backup)
+rag-memory reset [--force] [--no-backup] [--keep-config]
+```
+
+### Migration
+
+```bash
+# Migrate from database
+rag-memory migrate <path> [--auto] [--backup]
+
+# Migrate from legacy ~/rag-system
+rag-memory migrate --auto
+```
+
+### Import/Export
+
+```bash
+# Export to JSON
+rag-memory export output.json [--namespace]
+
+# Import from JSON
+rag-memory import-data input.json
+```
+
+---
+
+## ⚙️ Configuration
+
+Configuration file: `~/.hermes/plugins/rag-memory/config.yaml`
+
+```yaml
+database:
+  path: ~/.hermes/plugins/rag-memory/rag_core.db
+  backup_enabled: true
+  backup_path: ~/.hermes/plugins/rag-memory/backups/
+
+search:
+  max_results: 10
+  default_mode: hybrid    # tfidf | neural | hybrid
+  threshold: 0.5
+
+neural:
+  enabled: true
+  model: sentence-transformers/all-MiniLM-L6-v2
+  cache_dir: ~/.cache/torch/sentence_transformers/
+
+indexing:
+  auto_index: true
+  chunk_size: 500
+  chunk_overlap: 50
+```
+
+### Hermes Plugin Configuration
+
+In `~/.hermes/config.yaml`:
 
 ```yaml
 plugins:
@@ -162,7 +260,65 @@ plugins:
     max_results: 10          # Max search results
 ```
 
-## Architecture
+---
+
+## 📖 Usage Examples
+
+### Daily Workflow
+
+```bash
+# Check health
+rag-memory status
+
+# Search memory
+rag-memory search "meeting notes from yesterday"
+
+# Backup before changes
+rag-memory backup create --description "Before changes"
+
+# Index new documents
+rag-memory index ~/Documents/new_project/ --namespace work
+```
+
+### Backup & Restore
+
+```bash
+# Create backup
+rag-memory backup create --description "Before migration"
+
+# List all backups
+rag-memory backup list
+
+# Restore if needed
+rag-memory backup restore rag_core_backup_20260406_120000.db
+
+# Delete old backup
+rag-memory backup delete old_backup.db
+```
+
+### Recovery
+
+```bash
+# If database is corrupted
+rag-memory recover
+
+# Restore from specific backup
+rag-memory recover --from-backup rag_core_backup_20260406_120000.db
+```
+
+### Migration
+
+```bash
+# Auto-migrate from legacy ~/rag-system
+rag-memory migrate --auto
+
+# Migrate from specific database
+rag-memory migrate /path/to/old.db --backup
+```
+
+---
+
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -194,7 +350,9 @@ plugins:
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Performance
+---
+
+## ⚡ Performance
 
 | Operation | Time | Notes |
 |-----------|------|-------|
@@ -202,13 +360,52 @@ plugins:
 | Neural search | 60-100ms | sentence-transformers |
 | Cached search | <1ms | 40-60% hit rate |
 | Add document | 20-50ms | With embedding generation |
+| Backup creation | <1s | For typical database |
 
-## Development
+---
+
+## 🐛 Troubleshooting
+
+### Database Corrupted
+
+```bash
+rag-memory recover
+```
+
+### Neural Model Not Working
+
+```bash
+# Reinstall neural dependencies
+rag-memory install neural --force
+
+# Falls back to TF-IDF automatically if download fails
+```
+
+### Database Not Found
+
+```bash
+# Run setup
+rag-memory setup
+
+# Or restore from backup
+rag-memory backup restore <backup_file>
+```
+
+### Permission Errors
+
+```bash
+# Try user-space installation
+pip install --user git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
+```
+
+---
+
+## 🛠️ Development
 
 ### Setup Development Environment
 
 ```bash
-git clone https://github.com/yourname/rag-memory-plugin.git
+git clone https://github.com/favouraka/rag-memory-plugin.git
 cd rag-memory-plugin
 pip install -e ".[dev]"
 ```
@@ -231,34 +428,57 @@ mypy src/rag_memory
 ruff check src/rag_memory
 ```
 
-## Migration from ~/rag-system
+---
 
-If you have a legacy `~/rag-system` installation:
+## 📦 Plugin Integration
 
-```bash
-# Automatic migration
-rag-memory migrate-from-legacy
+The plugin registers tools that Hermes can use:
 
-# Or manual export/import
-rag-memory export backup.json
-rag-memory import-data backup.json
+**Tools:**
+- `rag_search`: Search memory by semantic similarity
+- `rag_add_document`: Add document to memory
+- `rag_stats`: Show database statistics
+- `rag_flush`: Flush write buffers
+
+**Hooks:**
+- `pre_llm`: Inject relevant context before LLM calls
+- `post_llm`: Capture LLM responses after generation
+- `session_start`: Initialize session context
+- `session_end`: Save session context
+
+Example in Hermes:
+```
+You: What did we work on yesterday?
+Hermes: [Uses rag_search tool] Let me check...
+      [Retrieves relevant context from previous conversations]
 ```
 
-The migration script:
-1. Connects to `~/rag-system/rag_data.db`
-2. Exports all documents with embeddings
-3. Imports to `~/.hermes/plugins/rag-memory/rag_core.db`
-4. Verifies data integrity
+---
 
-## License
+## 📄 License
 
-MIT
+MIT License - see [LICENSE](LICENSE) file for details
 
-## Contributing
+---
 
-Contributions welcome! Please read `CONTRIBUTING.md` for details.
+## 🤝 Contributing
 
-## Support
+Contributions welcome! Please feel free to submit a Pull Request.
 
-- GitHub Issues: https://github.com/yourname/rag-memory-plugin/issues
-- Docs: https://github.com/yourname/rag-memory-plugin/wiki
+---
+
+## 📞 Support
+
+- **GitHub Issues**: https://github.com/favouraka/rag-memory-plugin/issues
+- **Documentation**: https://github.com/favouraka/rag-memory-plugin/blob/main/docs/COMPLETE_IMPLEMENTATION.md
+
+---
+
+## 🎉 Status
+
+✅ **Production Ready** - All features implemented and tested!
+
+**Version:** 1.0.0
+**Total Commands:** 20+
+**Total Options:** 40+
+**Documentation:** Complete
