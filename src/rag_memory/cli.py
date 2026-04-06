@@ -318,12 +318,26 @@ from .cli_extended import (
     reset_cmd,
 )
 
+# Import Priority 3 commands
+from .cli_priority3 import (
+    backup_cli,
+    migrate_cmd,
+    recover_cmd,
+    index_cmd,
+)
+
 # Add extended commands to main group
 main.add_command(setup_cli, name='setup')
 main.add_command(install_cli, name='install')
 main.add_command(config_cli, name='config')
 main.add_command(status_cmd, name='status')
 main.add_command(reset_cmd, name='reset')
+
+# Add Priority 3 commands
+main.add_command(backup_cli, name='backup')
+main.add_command(migrate_cmd, name='migrate')
+main.add_command(recover_cmd, name='recover')
+main.add_command(index_cmd, name='index')
 
 
 if __name__ == "__main__":
