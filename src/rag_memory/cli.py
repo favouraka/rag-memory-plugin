@@ -292,15 +292,15 @@ def index_files(namespace: str | None, pattern: tuple, chunk_size: int, force: b
 
         # Print results
         console.print("\n[green]✓ Indexing complete[/green]")
-        console.print(f"\n[ cyan]Files scanned:[/cyan] {stats['files_scanned']}")
-        console.print(f"[ cyan]Files indexed:[/cyan] {stats['files_indexed']}")
-        console.print(f"[ cyan]Chunks added:[/cyan] {stats['chunks_added']}")
+        console.print(f"\n[cyan]Files scanned:[/cyan] {stats['files_scanned']}")
+        console.print(f"[cyan]Files indexed:[/cyan] {stats['files_indexed']}")
+        console.print(f"[cyan]Chunks added:[/cyan] {stats['chunks_added']}")
 
         if stats['chunks_skipped'] > 0:
-            console.print(f"[ yellow]Chunks skipped (duplicates):[/yellow] {stats['chunks_skipped']}")
+            console.print(f"[yellow]Chunks skipped (duplicates):[/yellow] {stats['chunks_skipped']}")
 
         if stats['errors']:
-            console.print(f"\n[ red]Errors:[/red] {len(stats['errors'])}")
+            console.print(f"\n[red]Errors:[/red] {len(stats['errors'])}")
             for error in stats['errors'][:5]:
                 console.print(f"  [red]✗[/red] {error}")
 

@@ -279,17 +279,31 @@ class FileIndexer:
     def _load_existing_hashes(self) -> None:
         """Load existing content hashes from RAG to avoid duplicates."""
         try:
-            # Search for all documents with file_index source
-            # This is a simplified check - in production you'd query directly
-            results = self.rag.search(
-                "", namespace="hermes_memory", limit=10000
-            )  # Empty search to get all
+            # Query database directly for all file_index documents
+            import sqlite3
 
-            for result in results:
-                metadata = result.get("metadata", {})
-                content_hash = metadata.get("content_hash")
-                if content_hash:
-                    self.indexed_hashes.add(content_hash)
+            conn = sqlite3.connect(self.rag.db_path)
+            cursor = conn.cursor()
+
+            # Get all documents with file_index source
+            cursor.execute("""
+                SELECT metadata
+                FROM documents
+                WHERE json_extract(metadata, '$.source') = 'file_index'
+            """)
+
+            rows = cursor.fetchall()
+            for row in rows:
+                metadata_json = row[0]
+                if metadata_json:
+                    import json
+
+                    metadata = json.loads(metadata_json)
+                    content_hash = metadata.get("content_hash")
+                    if content_hash:
+                        self.indexed_hashes.add(content_hash)
+
+            conn.close()
 
             logger.debug(f"Loaded {len(self.indexed_hashes)} existing hashes")
 
