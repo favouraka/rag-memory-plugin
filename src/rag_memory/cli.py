@@ -239,5 +239,75 @@ def import_data(input: Path) -> None:
         sys.exit(1)
 
 
+@main.command()
+@click.option("--namespace", default=None, help="Namespace to search (default: all)")
+@click.option("--pattern", multiple=True, help="File patterns to index (can use multiple)")
+@click.option("--chunk-size", default=2000, help="Maximum characters per chunk")
+@click.option("--force", is_flag=True, help="Re-index all files (skip deduplication)")
+def index_files(namespace: str | None, pattern: tuple, chunk_size: int, force: bool) -> None:
+    """Index Hermes memory files into RAG database.
+
+    Indexes MEMORY.md, skills, tool docs, and other static knowledge files
+    for semantic search during conversations.
+
+    Example:
+
+    \t rag-memory index-files
+
+    \t rag-memory index-files --pattern "MEMORY.md" --pattern "SESSION-STATE.md"
+
+    \t rag-memory index-files --force --chunk-size 3000
+    """
+    try:
+        from rag_memory.core import RAGCore, index_hermes_files
+
+        hermes_home = Path.home() / ".hermes"
+        data_dir = hermes_home / "plugins" / "rag-memory"
+        db_path = data_dir / "rag_core.db"
+
+        if not db_path.exists():
+            console.print("[red]✗ Database not found[/red]")
+            console.print("\n[yellow]Run:[/yellow] rag-memory doctor")
+            sys.exit(1)
+
+        console.print(f"[cyan]Hermes home:[/cyan] {hermes_home}")
+
+        # Build patterns if provided
+        patterns = None
+        if pattern:
+            patterns = {"custom": list(pattern)}
+            console.print(f"[cyan]Patterns:[/cyan] {patterns}")
+
+        # Initialize RAG
+        rag = RAGCore(str(db_path))
+
+        # Index files
+        with console.status("[bold green]Indexing files...", spinner="dots"):
+            stats = index_hermes_files(
+                rag,
+                hermes_home=hermes_home,
+                patterns=patterns,
+                chunk_size=chunk_size,
+            )
+
+        # Print results
+        console.print("\n[green]✓ Indexing complete[/green]")
+        console.print(f"\n[ cyan]Files scanned:[/cyan] {stats['files_scanned']}")
+        console.print(f"[ cyan]Files indexed:[/cyan] {stats['files_indexed']}")
+        console.print(f"[ cyan]Chunks added:[/cyan] {stats['chunks_added']}")
+
+        if stats['chunks_skipped'] > 0:
+            console.print(f"[ yellow]Chunks skipped (duplicates):[/yellow] {stats['chunks_skipped']}")
+
+        if stats['errors']:
+            console.print(f"\n[ red]Errors:[/red] {len(stats['errors'])}")
+            for error in stats['errors'][:5]:
+                console.print(f"  [red]✗[/red] {error}")
+
+    except Exception as e:
+        console.print(f"[red]✗ Indexing failed:[/red] {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

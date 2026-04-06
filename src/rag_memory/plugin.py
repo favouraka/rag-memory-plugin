@@ -150,6 +150,24 @@ def register(context: Any) -> None:
     )
     logger.debug(f"✓ RAG Memory tools registered: rag_search, rag_add_document, rag_stats, rag_flush")
 
+    # Register cron job for periodic file indexing
+    if _config.get("auto_index_files", True):
+        try:
+            from rag_memory.core.cron_integration import (
+                setup_cron_job,
+                register_session_hook,
+            )
+
+            # Register session start hook for file indexing
+            register_session_hook(context)
+
+            # Set up 4-hourly cron job
+            setup_cron_job(context)
+
+            logger.debug("✓ RAG Memory file indexing configured")
+        except Exception as e:
+            logger.warning(f"Failed to set up file indexing cron: {e}")
+
 
 # --------------------------------------------------------------------------- #
 # Hook implementations
@@ -260,7 +278,7 @@ def _on_post_llm_call(event: dict[str, Any], context: Any) -> None:
 
 
 def _on_session_start(event: dict[str, Any], context: Any) -> None:
-    """Initialize session-specific state.
+    """Initialize session-specific state and index Hermes memory files.
 
     Args:
         event: Session start event
@@ -272,6 +290,29 @@ def _on_session_start(event: dict[str, Any], context: Any) -> None:
     try:
         session_id = event.get("session_id", "unknown")
         logger.debug(f"RAG Memory session started: {session_id}")
+
+        # Index Hermes memory files on session start
+        if _config.get("index_on_session_start", True):
+            try:
+                from rag_memory.core import index_hermes_files
+
+                hermes_home = Path(getattr(context, "hermes_home", Path.home() / ".hermes"))
+                logger.info("📂 Indexing Hermes memory files...")
+
+                stats = index_hermes_files(
+                    _rag,
+                    hermes_home=hermes_home,
+                    chunk_size=_config.get("file_chunk_size", 2000),
+                )
+
+                logger.info(
+                    f"✓ File indexing: {stats['files_indexed']} files, "
+                    f"{stats['chunks_added']} chunks"
+                )
+
+            except Exception as e:
+                logger.warning(f"File indexing on session start failed: {e}")
+
     except Exception as e:
         logger.warning(f"on_session_start hook failed: {e}", exc_info=True)
 

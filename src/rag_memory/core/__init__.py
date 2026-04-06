@@ -3,6 +3,6 @@ RAG Memory Plugin - Core Components
 """
 
 from .rag_core import RAGCore
-from .indexing import FileIndexer
+from .file_indexing import FileIndexer, index_hermes_files
 
-__all__ = ['RAGCore', 'FileIndexer']
+__all__ = ['RAGCore', 'FileIndexer', 'index_hermes_files']
