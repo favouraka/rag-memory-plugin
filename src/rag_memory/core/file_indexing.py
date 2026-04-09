@@ -263,7 +263,7 @@ class FileIndexer:
                 self.index_file(file_path, f"hermes_{namespace}", chunk_size)
 
         # Log results
-        logger.info(f"✓ Indexing complete:")
+        logger.info("✓ Indexing complete:")
         logger.info(f"  Files scanned: {self.stats['files_scanned']}")
         logger.info(f"  Files indexed: {self.stats['files_indexed']}")
         logger.info(f"  Chunks added: {self.stats['chunks_added']}")

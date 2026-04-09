@@ -3,12 +3,11 @@ Core RAG functionality - TF-IDF + Neural retrieval
 This module provides the core search and indexing capabilities.
 """
 
+import hashlib
 import logging
 import sqlite3
-import hashlib
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +70,12 @@ class RAGCore:
         """)
 
         # Create indexes
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_namespace ON documents(namespace)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tfidf_terms_term ON tfidf_terms(term)")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_documents_namespace ON documents(namespace)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tfidf_terms_term ON tfidf_terms(term)"
+        )
 
         self.conn.commit()
         logger.info("✓ RAG core database initialized")
@@ -82,7 +85,7 @@ class RAGCore:
         content: str,
         namespace: str = "default",
         metadata: Optional[Dict[str, Any]] = None,
-        document_id: Optional[str] = None
+        document_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Add a document to RAG index.
@@ -108,7 +111,7 @@ class RAGCore:
         try:
             cursor.execute(
                 "INSERT INTO documents (id, namespace, content, metadata) VALUES (?, ?, ?, ?)",
-                (document_id, namespace, content, json.dumps(metadata or {}))
+                (document_id, namespace, content, json.dumps(metadata or {})),
             )
 
             # Index for TF-IDF
@@ -120,30 +123,24 @@ class RAGCore:
 
             self.conn.commit()
 
-            return {
-                "id": document_id,
-                "namespace": namespace,
-                "status": "added"
-            }
+            return {"id": document_id, "namespace": namespace, "status": "added"}
 
         except sqlite3.IntegrityError:
             # Document already exists, update it
             cursor.execute(
                 "UPDATE documents SET content = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                (content, json.dumps(metadata or {}), document_id)
+                (content, json.dumps(metadata or {}), document_id),
             )
 
             # Re-index TF-IDF
-            cursor.execute("DELETE FROM tfidf_terms WHERE document_id = ?", (document_id,))
+            cursor.execute(
+                "DELETE FROM tfidf_terms WHERE document_id = ?", (document_id,)
+            )
             self._index_tfidf(cursor, document_id, content)
 
             self.conn.commit()
 
-            return {
-                "id": document_id,
-                "namespace": namespace,
-                "status": "updated"
-            }
+            return {"id": document_id, "namespace": namespace, "status": "updated"}
 
     def _index_tfidf(self, cursor, document_id: str, content: str):
         """
@@ -158,7 +155,7 @@ class RAGCore:
         from collections import Counter
 
         # Simple tokenization - split on non-word characters
-        tokens = re.findall(r'\b\w+\b', content.lower())
+        tokens = re.findall(r"\b\w+\b", content.lower())
 
         # Count term frequencies
         term_freq = Counter(tokens)
@@ -168,7 +165,7 @@ class RAGCore:
             if len(term) > 2:  # Skip very short terms
                 cursor.execute(
                     "INSERT INTO tfidf_terms (document_id, term, frequency) VALUES (?, ?, ?)",
-                    (document_id, term, freq)
+                    (document_id, term, freq),
                 )
 
     def search(
@@ -177,7 +174,7 @@ class RAGCore:
         namespace: Optional[str] = None,
         mode: str = "hybrid",
         limit: int = 10,
-        tokens: int = 500
+        tokens: int = 500,
     ) -> List[Dict[str, Any]]:
         """
         Search RAG index.
@@ -192,8 +189,6 @@ class RAGCore:
         Returns:
             List of search results
         """
-        import re
-        from collections import Counter
 
         cursor = self.conn.cursor()
 
@@ -210,22 +205,18 @@ class RAGCore:
         char_limit = tokens * avg_chars_per_token
 
         for result in results:
-            content = result.get('content', '')
+            content = result.get("content", "")
             if len(content) > char_limit:
-                result['content'] = content[:char_limit] + "..."
+                result["content"] = content[:char_limit] + "..."
 
         # Add namespace to results
         for result in results:
-            result['_namespace'] = result.get('namespace', namespace or 'default')
+            result["_namespace"] = result.get("namespace", namespace or "default")
 
         return results[:limit]
 
     def _search_tfidf(
-        self,
-        cursor,
-        query: str,
-        namespace: Optional[str],
-        limit: int
+        self, cursor, query: str, namespace: Optional[str], limit: int
     ) -> List[Dict[str, Any]]:
         """
         Search using TF-IDF.
@@ -243,14 +234,14 @@ class RAGCore:
         from collections import Counter
 
         # Tokenize query
-        query_tokens = re.findall(r'\b\w+\b', query.lower())
+        query_tokens = re.findall(r"\b\w+\b", query.lower())
         query_freq = Counter(query_tokens)
 
         if not query_tokens:
             return []
 
         # Build SQL query
-        placeholders = ','.join(['?'] * len(query_tokens))
+        placeholders = ",".join(["?"] * len(query_tokens))
 
         if namespace:
             sql = f"""
@@ -283,13 +274,15 @@ class RAGCore:
 
         results = []
         for row in rows:
-            results.append({
-                'id': row[0],
-                'namespace': row[1],
-                'content': row[2],
-                'metadata': row[3],
-                'score': float(row[4])
-            })
+            results.append(
+                {
+                    "id": row[0],
+                    "namespace": row[1],
+                    "content": row[2],
+                    "metadata": row[3],
+                    "score": float(row[4]),
+                }
+            )
 
         return results
 
@@ -308,7 +301,7 @@ class RAGCore:
         cursor = self.conn.cursor()
         cursor.execute(
             "SELECT id, namespace, content, metadata, created_at FROM documents WHERE id = ?",
-            (document_id,)
+            (document_id,),
         )
         row = cursor.fetchone()
 
@@ -316,11 +309,11 @@ class RAGCore:
             return None
 
         return {
-            'id': row[0],
-            'namespace': row[1],
-            'content': row[2],
-            'metadata': json.loads(row[3]) if row[3] else {},
-            'created_at': row[4]
+            "id": row[0],
+            "namespace": row[1],
+            "content": row[2],
+            "metadata": json.loads(row[3]) if row[3] else {},
+            "created_at": row[4],
         }
 
     def list_namespaces(self) -> List[str]:

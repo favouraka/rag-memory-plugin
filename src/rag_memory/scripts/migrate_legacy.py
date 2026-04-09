@@ -25,7 +25,7 @@ import json
 import logging
 import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -164,9 +164,7 @@ def import_to_plugin(
     return imported
 
 
-def verify_migration(
-    legacy_db_path: Path, plugin_db_path: Path
-) -> bool:
+def verify_migration(legacy_db_path: Path, plugin_db_path: Path) -> bool:
     """Verify data integrity after migration.
 
     Args:
@@ -233,7 +231,9 @@ def main() -> None:
 
     # Backup existing plugin DB if it exists
     if plugin_db.exists():
-        backup_path = plugin_db.with_suffix(f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
+        backup_path = plugin_db.with_suffix(
+            f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+        )
         logger.info(f"📦 Backing up existing DB to: {backup_path}")
         plugin_db.rename(backup_path)
 

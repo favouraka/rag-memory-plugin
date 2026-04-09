@@ -3,10 +3,9 @@ Automatic Peer Tracking for RAG System
 Integrates Peer/Session model with auto-capture functionality
 """
 
-import json
-from datetime import datetime
-from typing import Optional, Dict, Any, List
 import sqlite3
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 # Handle both plugin context and test context
 try:
@@ -14,7 +13,7 @@ try:
     from ..models import Peer, PeerManager, Session, SessionManager
 except ImportError:
     # Test context: absolute import
-    from models import Peer, PeerManager, Session, SessionManager
+    from models import PeerManager, Session, SessionManager
 
 
 class AutoPeerCapture:
@@ -27,7 +26,7 @@ class AutoPeerCapture:
         self,
         db_path: str = "rag_data.db",
         peer_manager: Optional[PeerManager] = None,
-        session_manager: Optional[SessionManager] = None
+        session_manager: Optional[SessionManager] = None,
     ):
         """
         Initialize auto peer capture
@@ -60,7 +59,7 @@ class AutoPeerCapture:
         role: str,
         content: str,
         session_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Capture a message with automatic peer and session tracking
@@ -82,7 +81,7 @@ class AutoPeerCapture:
         if not peer:
             peer = self.peer_manager.create_peer(
                 peer_id=peer_id,
-                metadata={"auto_created": True, "created_at": timestamp.isoformat()}
+                metadata={"auto_created": True, "created_at": timestamp.isoformat()},
             )
 
         # Ensure session exists
@@ -102,12 +101,12 @@ class AutoPeerCapture:
 
         # Add message to buffer
         message = {
-            'peer_id': peer_id,
-            'role': role,
-            'content': content,
-            'session_id': session_id,
-            'timestamp': timestamp,
-            'metadata': metadata or {}
+            "peer_id": peer_id,
+            "role": role,
+            "content": content,
+            "session_id": session_id,
+            "timestamp": timestamp,
+            "metadata": metadata or {},
         }
 
         self._message_buffer.append(message)
@@ -118,35 +117,33 @@ class AutoPeerCapture:
             content=content,
             session_id=session_id,
             timestamp=timestamp,
-            metadata=metadata
+            metadata=metadata,
         )
 
         # Add to session (don't double-add to peer)
-        session._messages.append({
-            'id': f"{session_id}_{len(session._messages)}_{int(timestamp.timestamp())}",
-            'session_id': session_id,
-            'peer_id': peer_id,
-            'role': role,
-            'content': content,
-            'timestamp': timestamp.isoformat(),
-            'metadata': metadata or {}
-        })
+        session._messages.append(
+            {
+                "id": f"{session_id}_{len(session._messages)}_{int(timestamp.timestamp())}",
+                "session_id": session_id,
+                "peer_id": peer_id,
+                "role": role,
+                "content": content,
+                "timestamp": timestamp.isoformat(),
+                "metadata": metadata or {},
+            }
+        )
 
         # Flush buffer if threshold reached
         if len(self._message_buffer) >= self._buffer_flush_threshold:
             self.flush_buffer()
 
-        return {
-            **message,
-            'peer': peer.to_dict(),
-            'session': session.to_dict()
-        }
+        return {**message, "peer": peer.to_dict(), "session": session.to_dict()}
 
     def start_session(
         self,
         session_id: str,
         peer_ids: List[str],
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Session:
         """
         Start a new session with specified peers
@@ -165,8 +162,7 @@ class AutoPeerCapture:
             peer = self.peer_manager.get_peer(peer_id)
             if not peer:
                 peer = self.peer_manager.create_peer(
-                    peer_id=peer_id,
-                    metadata={"auto_created": True}
+                    peer_id=peer_id, metadata={"auto_created": True}
                 )
             peers.append(peer)
 
@@ -210,10 +206,7 @@ class AutoPeerCapture:
         return flushed
 
     def get_peer_context(
-        self,
-        peer_id: str,
-        tokens: int = 2000,
-        session_id: Optional[str] = None
+        self, peer_id: str, tokens: int = 2000, session_id: Optional[str] = None
     ) -> str:
         """
         Get conversation context for a specific peer
@@ -237,8 +230,8 @@ class AutoPeerCapture:
         session_id: str,
         summary: bool = True,
         tokens: int = 2000,
-        include_system: bool = False
-    ) -> 'SessionContext':
+        include_system: bool = False,
+    ) -> "SessionContext":
         """
         Get session context for LLM consumption
 
@@ -258,17 +251,11 @@ class AutoPeerCapture:
             return SessionContext(session_id, [], None)
 
         return session.context(
-            summary=summary,
-            tokens=tokens,
-            include_system=include_system
+            summary=summary, tokens=tokens, include_system=include_system
         )
 
     def search_peer(
-        self,
-        peer_id: str,
-        query: str,
-        limit: int = 5,
-        session_id: Optional[str] = None
+        self, peer_id: str, query: str, limit: int = 5, session_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Search within a peer's messages
@@ -288,10 +275,7 @@ class AutoPeerCapture:
 
         return peer.search(query=query, limit=limit, session_id=session_id)
 
-    def list_peers(
-        self,
-        limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def list_peers(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         List all peers
 
@@ -302,12 +286,14 @@ class AutoPeerCapture:
             List of peer dictionaries
         """
         peers = self.peer_manager.list_peers()
-        return [peer.to_dict() for peer in peers[:limit]] if limit else [peer.to_dict() for peer in peers]
+        return (
+            [peer.to_dict() for peer in peers[:limit]]
+            if limit
+            else [peer.to_dict() for peer in peers]
+        )
 
     def list_sessions(
-        self,
-        peer_id: Optional[str] = None,
-        limit: Optional[int] = None
+        self, peer_id: Optional[str] = None, limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         List sessions, optionally filtered by peer
@@ -349,14 +335,14 @@ class AutoPeerCapture:
             return {}
 
         sessions = peer.get_sessions(limit=1000)
-        total_messages = sum(s['message_count'] for s in sessions)
+        total_messages = sum(s["message_count"] for s in sessions)
 
         return {
-            'peer_id': peer_id,
-            'total_messages': total_messages,
-            'total_sessions': len(sessions),
-            'metadata': peer.get_metadata(),
-            'recent_sessions': sessions[:5]
+            "peer_id": peer_id,
+            "total_messages": total_messages,
+            "total_sessions": len(sessions),
+            "metadata": peer.get_metadata(),
+            "recent_sessions": sessions[:5],
         }
 
     def cleanup(self) -> None:
@@ -370,11 +356,11 @@ if __name__ == "__main__":
     print("Auto Peer Capture - Quick Test")
     print("=" * 50)
 
-    import tempfile
     import os
+    import tempfile
 
     # Create temp database
-    temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+    temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
     db_path = temp_db.name
     temp_db.close()
 
@@ -386,7 +372,7 @@ if __name__ == "__main__":
         session = auto.start_session(
             session_id="test-session-1",
             peer_ids=["alice", "bob", "assistant"],
-            metadata={"type": "test"}
+            metadata={"type": "test"},
         )
 
         print(f"\n✓ Created session: {session.session_id}")
@@ -397,7 +383,7 @@ if __name__ == "__main__":
         auto.capture_message("bob", "user", "Hi Alice!")
         auto.capture_message("assistant", "assistant", "How can I help?")
 
-        print(f"\n✓ Captured 3 messages")
+        print("\n✓ Captured 3 messages")
 
         # Get peer context
         alice_context = auto.get_peer_context("alice", tokens=500)
@@ -419,7 +405,7 @@ if __name__ == "__main__":
 
         # Get peer stats
         alice_stats = auto.get_peer_stats("alice")
-        print(f"\nAlice's stats:")
+        print("\nAlice's stats:")
         print(f"  - Total messages: {alice_stats['total_messages']}")
         print(f"  - Total sessions: {alice_stats['total_sessions']}")
 

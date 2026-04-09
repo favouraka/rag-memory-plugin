@@ -61,10 +61,9 @@ def _on_session_start_index_files(event: dict, context: any) -> None:
         context: Plugin context
     """
     try:
-        from rag_memory.core import index_hermes_files, RAGCore
-
         # Get RAG instance from plugin
         import rag_memory.plugin as plugin
+        from rag_memory.core import index_hermes_files
 
         if not plugin._initialized or not plugin._rag:
             logger.debug("RAG not initialized, skipping file index")

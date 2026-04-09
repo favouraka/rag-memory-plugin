@@ -2,13 +2,10 @@
 Caching layer for RAG operations
 """
 
-import logging
-import json
-import time
-from functools import lru_cache
-from typing import Dict, Any, Optional, Tuple
-from pathlib import Path
 import hashlib
+import logging
+import time
+from typing import Any, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +57,7 @@ class QueryCache:
 
     def stats(self) -> Dict[str, Any]:
         """Cache statistics"""
-        return {
-            "size": len(self._cache),
-            "max_size": self.max_size,
-            "ttl": self.ttl
-        }
+        return {"size": len(self._cache), "max_size": self.max_size, "ttl": self.ttl}
 
 
 class PerformanceMetrics:
@@ -75,7 +68,7 @@ class PerformanceMetrics:
             "search_times": [],
             "index_times": [],
             "cache_hits": 0,
-            "cache_misses": 0
+            "cache_misses": 0,
         }
         self._max_samples = 1000
 

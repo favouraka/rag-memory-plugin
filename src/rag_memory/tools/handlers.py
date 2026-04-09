@@ -4,8 +4,7 @@ These are the functions that execute when the LLM calls the tools.
 """
 
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +50,9 @@ def rag_search(args: Dict[str, Any], **kwargs) -> str:
                 namespace = _isolation.get_session_namespace(session_id)
 
         # Perform search
-        if _rag_core and hasattr(_rag_core, 'search'):
+        if _rag_core and hasattr(_rag_core, "search"):
             results = _rag_core.search(
-                query=query,
-                namespace=namespace,
-                mode=mode,
-                limit=limit,
-                tokens=tokens
+                query=query, namespace=namespace, mode=mode, limit=limit, tokens=tokens
             )
         else:
             results = []
@@ -68,9 +63,9 @@ def rag_search(args: Dict[str, Any], **kwargs) -> str:
 
         output = [f"Found {len(results)} results for: '{query}'\n"]
         for i, result in enumerate(results[:limit], 1):
-            content = result.get('content', '')[:500]  # Truncate long content
-            score = result.get('score', 0)
-            ns = result.get('_namespace', namespace)
+            content = result.get("content", "")[:500]  # Truncate long content
+            score = result.get("score", 0)
+            ns = result.get("_namespace", namespace)
 
             output.append(f"\n{i}. [{ns}] (score: {score:.2f})")
             output.append(f"   {content}")
@@ -105,14 +100,14 @@ def rag_add_document(args: Dict[str, Any], **kwargs) -> str:
                 namespace = "default"
 
         # Add document
-        if _rag_core and hasattr(_rag_core, 'add_document'):
+        if _rag_core and hasattr(_rag_core, "add_document"):
             result = _rag_core.add_document(
                 content=content,
                 namespace=namespace,
                 metadata=metadata,
-                document_id=document_id
+                document_id=document_id,
             )
-            doc_id = result.get('id', document_id)
+            doc_id = result.get("id", document_id)
             return f"✓ Document added to namespace '{namespace}' (ID: {doc_id})"
         else:
             return "RAG core not available - document not added"
@@ -197,11 +192,11 @@ def rag_get_session_context(args: Dict[str, Any], **kwargs) -> str:
             messages = session.to_anthropic(limit=limit)
             output.append(f"\nAnthropic format:\n{str(messages)}")
         else:
-            output.append(f"\nRecent messages:")
+            output.append("\nRecent messages:")
             for msg in session._messages[-limit:]:
-                role = msg.get('role', 'unknown')
-                peer = msg.get('peer_id', 'unknown')
-                content = msg.get('content', '')[:200]
+                role = msg.get("role", "unknown")
+                peer = msg.get("peer_id", "unknown")
+                content = msg.get("content", "")[:200]
                 output.append(f"[{peer}/{role}]: {content}")
 
         return "\n".join(output)
@@ -224,9 +219,7 @@ def rag_start_session(args: Dict[str, Any], **kwargs) -> str:
 
         # Start session
         session = _auto_capture.start_session(
-            session_id=session_id,
-            peer_ids=peer_ids,
-            metadata=metadata
+            session_id=session_id, peer_ids=peer_ids, metadata=metadata
         )
 
         if activate:
@@ -255,7 +248,7 @@ def rag_end_session(args: Dict[str, Any], **kwargs) -> str:
         if not session_id:
             active = _auto_capture.get_active_session()
             if active:
-                session_id = active.get('session_id')
+                session_id = active.get("session_id")
             else:
                 return "No active session to end"
 
@@ -294,7 +287,7 @@ def rag_capture_message(args: Dict[str, Any], **kwargs) -> str:
             content=content,
             session_id=session_id,
             metadata=metadata,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
         output = [f"✓ Message captured from: {peer_id}"]
@@ -326,7 +319,7 @@ def rag_list_peers(args: Dict[str, Any], **kwargs) -> str:
         if filter_metadata and peers:
             filtered = []
             for peer in peers:
-                peer_meta = peer.get('metadata', {})
+                peer_meta = peer.get("metadata", {})
                 if all(peer_meta.get(k) == v for k, v in filter_metadata.items()):
                     filtered.append(peer)
             peers = filtered
@@ -336,13 +329,15 @@ def rag_list_peers(args: Dict[str, Any], **kwargs) -> str:
 
         output = [f"Peers ({len(peers)}):"]
         for peer in peers[:limit]:
-            peer_id = peer.get('peer_id', 'unknown')
+            peer_id = peer.get("peer_id", "unknown")
 
             if include_stats:
                 stats = _auto_capture.get_peer_stats(peer_id)
-                msg_count = stats.get('total_messages', 0)
-                session_count = stats.get('total_sessions', 0)
-                output.append(f"  - {peer_id} ({msg_count} messages, {session_count} sessions)")
+                msg_count = stats.get("total_messages", 0)
+                session_count = stats.get("total_sessions", 0)
+                output.append(
+                    f"  - {peer_id} ({msg_count} messages, {session_count} sessions)"
+                )
             else:
                 output.append(f"  - {peer_id}")
 
@@ -362,34 +357,31 @@ def rag_list_sessions(args: Dict[str, Any], **kwargs) -> str:
         include_metadata = args.get("include_metadata", True)
 
         # List sessions
-        sessions = _auto_capture.list_sessions(
-            limit=limit,
-            peer_id=peer_id
-        )
+        sessions = _auto_capture.list_sessions(limit=limit, peer_id=peer_id)
 
         if not sessions:
             return "No sessions found"
 
         output = [f"Sessions ({len(sessions)}):"]
         for session in sessions[:limit]:
-            session_id = session.get('session_id', 'unknown')
-            peer_count = len(session.get('_peers', {}))
-            msg_count = len(session.get('_messages', []))
+            session_id = session.get("session_id", "unknown")
+            peer_count = len(session.get("_peers", {}))
+            msg_count = len(session.get("_messages", []))
 
             output.append(f"\n  {session_id}")
             output.append(f"    Peers: {peer_count}, Messages: {msg_count}")
 
             if include_metadata:
-                start_time = session.get('_start_time')
+                start_time = session.get("_start_time")
                 if start_time:
                     output.append(f"    Started: {start_time}")
 
             if include_messages:
-                output.append(f"    Messages:")
-                for msg in session.get('_messages', [])[-5:]:  # Last 5
-                    peer = msg.get('peer_id', 'unknown')
-                    role = msg.get('role', 'unknown')
-                    content = msg.get('content', '')[:50]
+                output.append("    Messages:")
+                for msg in session.get("_messages", [])[-5:]:  # Last 5
+                    peer = msg.get("peer_id", "unknown")
+                    role = msg.get("role", "unknown")
+                    content = msg.get("content", "")[:50]
                     output.append(f"      [{peer}/{role}]: {content}...")
 
         return "\n".join(output)
@@ -400,6 +392,7 @@ def rag_list_sessions(args: Dict[str, Any], **kwargs) -> str:
 
 
 # Hook functions for lifecycle events
+
 
 def inject_context(ctx, **kwargs):
     """
@@ -413,7 +406,7 @@ def inject_context(ctx, **kwargs):
         if not active:
             return {}
 
-        session_id = active.get('session_id')
+        session_id = active.get("session_id")
 
         # Get session context
         session = _session_manager.get_session(session_id)
@@ -428,15 +421,13 @@ def inject_context(ctx, **kwargs):
             if peer and len(peer._messages_cache) > 0:
                 last_message = peer._messages_cache[-1]
                 if last_message:
-                    role = last_message.get('role', 'unknown')
-                    content = last_message.get('content', '')[:200]
+                    role = last_message.get("role", "unknown")
+                    content = last_message.get("content", "")[:200]
                     context_parts.append(f"{peer_id} ({role}): {content}...")
 
         if context_parts:
             context_str = "\n".join(context_parts)
-            return {
-                "context": f"Recent conversation context:\n{context_str}"
-            }
+            return {"context": f"Recent conversation context:\n{context_str}"}
 
         return {}
 
@@ -461,7 +452,7 @@ def capture_output(ctx, tool_name, args, result, **kwargs):
         if not active:
             return
 
-        session_id = active.get('session_id')
+        session_id = active.get("session_id")
 
         # For now, just log that we captured a tool call
         logger.info(f"Captured tool call: {tool_name} in session {session_id}")

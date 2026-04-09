@@ -16,41 +16,38 @@ RAG_SEARCH = {
     "parameters": {
         "type": "object",
         "properties": {
-            "query": {
-                "type": "string",
-                "description": "Search query or question"
-            },
+            "query": {"type": "string", "description": "Search query or question"},
             "mode": {
                 "type": "string",
                 "enum": ["hybrid", "tfidf", "neural"],
                 "default": "hybrid",
-                "description": "Retrieval mode: hybrid (recommended), tfidf (fast), neural (semantic)"
+                "description": "Retrieval mode: hybrid (recommended), tfidf (fast), neural (semantic)",
             },
             "namespace": {
                 "type": "string",
-                "description": "Optional: Search within specific namespace (e.g., 'peer_alice', 'session_chat-1')"
+                "description": "Optional: Search within specific namespace (e.g., 'peer_alice', 'session_chat-1')",
             },
             "peer_id": {
                 "type": "string",
-                "description": "Optional: Search within peer's namespace (auto-converts to peer_<peer_id>)"
+                "description": "Optional: Search within peer's namespace (auto-converts to peer_<peer_id>)",
             },
             "session_id": {
                 "type": "string",
-                "description": "Optional: Search within session's namespace (auto-converts to session_<session_id>)"
+                "description": "Optional: Search within session's namespace (auto-converts to session_<session_id>)",
             },
             "limit": {
                 "type": "integer",
                 "default": 10,
-                "description": "Maximum number of results to return"
+                "description": "Maximum number of results to return",
             },
             "tokens": {
                 "type": "integer",
                 "default": 500,
-                "description": "Approximate token budget for results (trims content if needed)"
-            }
+                "description": "Approximate token budget for results (trims content if needed)",
+            },
         },
-        "required": ["query"]
-    }
+        "required": ["query"],
+    },
 }
 
 RAG_ADD_DOCUMENT = {
@@ -67,31 +64,31 @@ RAG_ADD_DOCUMENT = {
         "properties": {
             "content": {
                 "type": "string",
-                "description": "Document content to add to memory"
+                "description": "Document content to add to memory",
             },
             "namespace": {
                 "type": "string",
-                "description": "Optional: Namespace to store in (e.g., 'peer_alice', 'session_chat-1')"
+                "description": "Optional: Namespace to store in (e.g., 'peer_alice', 'session_chat-1')",
             },
             "peer_id": {
                 "type": "string",
-                "description": "Optional: Store in peer's namespace (auto-converts to peer_<peer_id>)"
+                "description": "Optional: Store in peer's namespace (auto-converts to peer_<peer_id>)",
             },
             "session_id": {
                 "type": "string",
-                "description": "Optional: Store in session's namespace (auto-converts to session_<session_id>)"
+                "description": "Optional: Store in session's namespace (auto-converts to session_<session_id>)",
             },
             "metadata": {
                 "type": "object",
-                "description": "Optional: Metadata to attach (e.g., {'source': 'user', 'importance': 'high'})"
+                "description": "Optional: Metadata to attach (e.g., {'source': 'user', 'importance': 'high'})",
             },
             "document_id": {
                 "type": "string",
-                "description": "Optional: Custom document ID (auto-generated if not provided)"
-            }
+                "description": "Optional: Custom document ID (auto-generated if not provided)",
+            },
         },
-        "required": ["content"]
-    }
+        "required": ["content"],
+    },
 }
 
 RAG_GET_PEER_CONTEXT = {
@@ -107,27 +104,27 @@ RAG_GET_PEER_CONTEXT = {
         "properties": {
             "peer_id": {
                 "type": "string",
-                "description": "Peer identifier to get context for"
+                "description": "Peer identifier to get context for",
             },
             "tokens": {
                 "type": "integer",
                 "default": 500,
-                "description": "Approximate token budget (retrieves as many messages as fit)"
+                "description": "Approximate token budget (retrieves as many messages as fit)",
             },
             "include_metadata": {
                 "type": "boolean",
                 "default": False,
-                "description": "Include peer metadata (name, preferences, etc.)"
+                "description": "Include peer metadata (name, preferences, etc.)",
             },
             "format": {
                 "type": "string",
                 "enum": ["text", "openai", "anthropic"],
                 "default": "text",
-                "description": "Output format: text (plain), openai (OpenAI messages), anthropic (Claude messages)"
-            }
+                "description": "Output format: text (plain), openai (OpenAI messages), anthropic (Claude messages)",
+            },
         },
-        "required": ["peer_id"]
-    }
+        "required": ["peer_id"],
+    },
 }
 
 RAG_GET_SESSION_CONTEXT = {
@@ -143,27 +140,27 @@ RAG_GET_SESSION_CONTEXT = {
         "properties": {
             "session_id": {
                 "type": "string",
-                "description": "Session identifier to get context for"
+                "description": "Session identifier to get context for",
             },
             "limit": {
                 "type": "integer",
                 "default": 100,
-                "description": "Maximum number of messages to return"
+                "description": "Maximum number of messages to return",
             },
             "format": {
                 "type": "string",
                 "enum": ["text", "openai", "anthropic"],
                 "default": "text",
-                "description": "Output format: text (plain), openai (OpenAI messages), anthropic (Claude messages)"
+                "description": "Output format: text (plain), openai (OpenAI messages), anthropic (Claude messages)",
             },
             "include_metadata": {
                 "type": "boolean",
                 "default": False,
-                "description": "Include session metadata (start time, participants, etc.)"
-            }
+                "description": "Include session metadata (start time, participants, etc.)",
+            },
         },
-        "required": ["session_id"]
-    }
+        "required": ["session_id"],
+    },
 }
 
 RAG_START_SESSION = {
@@ -179,25 +176,25 @@ RAG_START_SESSION = {
         "properties": {
             "session_id": {
                 "type": "string",
-                "description": "Optional: Custom session ID (auto-generated if not provided)"
+                "description": "Optional: Custom session ID (auto-generated if not provided)",
             },
             "peer_ids": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "List of peer IDs participating in the session"
+                "description": "List of peer IDs participating in the session",
             },
             "metadata": {
                 "type": "object",
-                "description": "Optional: Session metadata (e.g., {'topic': 'planning', 'platform': 'telegram'})"
+                "description": "Optional: Session metadata (e.g., {'topic': 'planning', 'platform': 'telegram'})",
             },
             "activate": {
                 "type": "boolean",
                 "default": True,
-                "description": "Set as the active session for auto-capture (default: True)"
-            }
+                "description": "Set as the active session for auto-capture (default: True)",
+            },
         },
-        "required": ["peer_ids"]
-    }
+        "required": ["peer_ids"],
+    },
 }
 
 RAG_END_SESSION = {
@@ -212,10 +209,10 @@ RAG_END_SESSION = {
         "properties": {
             "session_id": {
                 "type": "string",
-                "description": "Optional: Session ID to end (ends active session if not provided)"
+                "description": "Optional: Session ID to end (ends active session if not provided)",
             }
-        }
-    }
+        },
+    },
 }
 
 RAG_CAPTURE_MESSAGE = {
@@ -232,33 +229,30 @@ RAG_CAPTURE_MESSAGE = {
         "properties": {
             "peer_id": {
                 "type": "string",
-                "description": "Peer identifier who sent the message"
+                "description": "Peer identifier who sent the message",
             },
             "role": {
                 "type": "string",
                 "enum": ["user", "assistant", "system"],
                 "default": "user",
-                "description": "Message role: user, assistant, or system"
+                "description": "Message role: user, assistant, or system",
             },
-            "content": {
-                "type": "string",
-                "description": "Message content"
-            },
+            "content": {"type": "string", "description": "Message content"},
             "session_id": {
                 "type": "string",
-                "description": "Optional: Session ID (uses active session if not provided)"
+                "description": "Optional: Session ID (uses active session if not provided)",
             },
             "metadata": {
                 "type": "object",
-                "description": "Optional: Message metadata (e.g., {'source': 'telegram', 'platform': 'discord'})"
+                "description": "Optional: Message metadata (e.g., {'source': 'telegram', 'platform': 'discord'})",
             },
             "timestamp": {
                 "type": "string",
-                "description": "Optional: ISO timestamp (default: current time)"
-            }
+                "description": "Optional: ISO timestamp (default: current time)",
+            },
         },
-        "required": ["peer_id", "content"]
-    }
+        "required": ["peer_id", "content"],
+    },
 }
 
 RAG_LIST_PEERS = {
@@ -275,19 +269,19 @@ RAG_LIST_PEERS = {
             "limit": {
                 "type": "integer",
                 "default": 50,
-                "description": "Maximum number of peers to return"
+                "description": "Maximum number of peers to return",
             },
             "include_stats": {
                 "type": "boolean",
                 "default": True,
-                "description": "Include peer statistics (message count, sessions, etc.)"
+                "description": "Include peer statistics (message count, sessions, etc.)",
             },
             "filter_metadata": {
                 "type": "object",
-                "description": "Optional: Filter by metadata (e.g., {'platform': 'telegram'})"
-            }
-        }
-    }
+                "description": "Optional: Filter by metadata (e.g., {'platform': 'telegram'})",
+            },
+        },
+    },
 }
 
 RAG_LIST_SESSIONS = {
@@ -304,22 +298,22 @@ RAG_LIST_SESSIONS = {
             "limit": {
                 "type": "integer",
                 "default": 50,
-                "description": "Maximum number of sessions to return"
+                "description": "Maximum number of sessions to return",
             },
             "peer_id": {
                 "type": "string",
-                "description": "Optional: Filter sessions by peer ID"
+                "description": "Optional: Filter sessions by peer ID",
             },
             "include_messages": {
                 "type": "boolean",
                 "default": False,
-                "description": "Include session messages (warning: can be large)"
+                "description": "Include session messages (warning: can be large)",
             },
             "include_metadata": {
                 "type": "boolean",
                 "default": True,
-                "description": "Include session metadata"
-            }
-        }
-    }
+                "description": "Include session metadata",
+            },
+        },
+    },
 }

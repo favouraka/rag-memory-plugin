@@ -12,19 +12,18 @@ from __future__ import annotations
 import json
 import shutil
 import sqlite3
-import subprocess
 import sys
-from pathlib import Path
 from datetime import datetime
-from typing import Optional, List
+from pathlib import Path
+from typing import List, Optional
 
 import click
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.prompt import Confirm
 from rich import print as rprint
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.prompt import Confirm
+from rich.table import Table
 
 console = Console()
 
@@ -32,6 +31,7 @@ console = Console()
 # ==============================================================================
 # Utility Functions
 # ==============================================================================
+
 
 def get_hermes_home() -> Path:
     """Get Hermes home directory."""
@@ -64,7 +64,11 @@ def list_backups() -> List[Path]:
 def get_backup_info(backup_path: Path) -> dict:
     """Get backup information."""
     stat = backup_path.stat()
-    db_info = {"path": backup_path, "size": stat.st_size, "modified": datetime.fromtimestamp(stat.st_mtime)}
+    db_info = {
+        "path": backup_path,
+        "size": stat.st_size,
+        "modified": datetime.fromtimestamp(stat.st_mtime),
+    }
 
     # Try to get document count from database
     try:
@@ -88,14 +92,15 @@ def get_backup_info(backup_path: Path) -> dict:
 # Backup Commands
 # ==============================================================================
 
+
 @click.group()
 def backup_cli():
     """Backup management commands."""
     pass
 
 
-@backup_cli.command('create')
-@click.option('--description', '-d', help='Backup description')
+@backup_cli.command("create")
+@click.option("--description", "-d", help="Backup description")
 def backup_create(description: str) -> None:
     """Create a database backup."""
     rprint(Panel.fit("[bold cyan]Creating Backup", style="bold cyan"))
@@ -119,7 +124,9 @@ def backup_create(description: str) -> None:
     # If description provided, add it to filename
     if description:
         # Sanitize description (remove special chars, replace spaces with underscores)
-        safe_desc = "".join(c if c.isalnum() or c in ('_', '-') else '_' for c in description)
+        safe_desc = "".join(
+            c if c.isalnum() or c in ("_", "-") else "_" for c in description
+        )
         backup_path = backup_dir / f"rag_core_backup_{timestamp}_{safe_desc}.db"
 
     console.print(f"[cyan]Creating backup:[/cyan] {backup_path.name}")
@@ -167,8 +174,8 @@ def backup_create(description: str) -> None:
         sys.exit(1)
 
 
-@backup_cli.command('list')
-@click.option('--json', 'json_output', is_flag=True, help='JSON output')
+@backup_cli.command("list")
+@click.option("--json", "json_output", is_flag=True, help="JSON output")
 def backup_list(json_output: bool) -> None:
     """List all backups."""
     backups = list_backups()
@@ -183,14 +190,16 @@ def backup_list(json_output: bool) -> None:
         backups_info = []
         for backup_path in backups:
             info = get_backup_info(backup_path)
-            backups_info.append({
-                "name": backup_path.name,
-                "path": str(info["path"]),
-                "size": info["size"],
-                "modified": info["modified"].isoformat(),
-                "documents": info.get("documents", 0),
-                "namespaces": info.get("namespaces", 0),
-            })
+            backups_info.append(
+                {
+                    "name": backup_path.name,
+                    "path": str(info["path"]),
+                    "size": info["size"],
+                    "modified": info["modified"].isoformat(),
+                    "documents": info.get("documents", 0),
+                    "namespaces": info.get("namespaces", 0),
+                }
+            )
 
         console.print(json.dumps(backups_info, indent=2))
         return
@@ -228,19 +237,23 @@ def backup_list(json_output: bool) -> None:
     console.print(f"[cyan]Backup directory:[/cyan] {get_backup_dir()}")
 
 
-@backup_cli.command('restore')
-@click.argument('backup', type=click.Path(exists=True))
-@click.option('--force', is_flag=True, help='Skip confirmation')
-@click.option('--backup-current', is_flag=True, help='Backup current database before restoring')
+@backup_cli.command("restore")
+@click.argument("backup", type=click.Path(exists=True))
+@click.option("--force", is_flag=True, help="Skip confirmation")
+@click.option(
+    "--backup-current", is_flag=True, help="Backup current database before restoring"
+)
 def backup_restore(backup: str, force: bool, backup_current: bool) -> None:
     """Restore database from backup.
 
     BACKUP can be a filename or full path to backup file.
     """
-    rprint(Panel.fit(
-        "[bold yellow]⚠️  Database Restore[/bold yellow]",
-        subtitle="[dim]This will REPLACE your current database[/dim]"
-    ))
+    rprint(
+        Panel.fit(
+            "[bold yellow]⚠️  Database Restore[/bold yellow]",
+            subtitle="[dim]This will REPLACE your current database[/dim]",
+        )
+    )
     print()
 
     # Resolve backup path
@@ -273,6 +286,7 @@ def backup_restore(backup: str, force: bool, backup_current: bool) -> None:
     if db_path.exists():
         try:
             from rag_memory.core import RAGCore
+
             rag = RAGCore(str(db_path))
             stats = rag.get_stats()
 
@@ -296,7 +310,9 @@ def backup_restore(backup: str, force: bool, backup_current: bool) -> None:
     console.print(f"  Size: {backup_info['size'] / 1024 / 1024:.2f} MB")
     console.print(f"  Documents: {backup_info.get('documents', '?')}")
     console.print(f"  Namespaces: {backup_info.get('namespaces', '?')}")
-    console.print(f"  Modified: {backup_info['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+    console.print(
+        f"  Modified: {backup_info['modified'].strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     print()
 
     # Confirmation
@@ -310,7 +326,9 @@ def backup_restore(backup: str, force: bool, backup_current: bool) -> None:
         console.print("\n[cyan]Creating backup of current database...[/cyan]")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        auto_backup_path = get_backup_dir() / f"rag_core_backup_{timestamp}_pre_restore.db"
+        auto_backup_path = (
+            get_backup_dir() / f"rag_core_backup_{timestamp}_pre_restore.db"
+        )
 
         try:
             shutil.copy2(db_path, auto_backup_path)
@@ -338,6 +356,7 @@ def backup_restore(backup: str, force: bool, backup_current: bool) -> None:
         # Verify
         console.print("[cyan]Verifying restored database...[/cyan]")
         from rag_memory.core import RAGCore
+
         rag = RAGCore(str(db_path))
         stats = rag.get_stats()
 
@@ -350,9 +369,9 @@ def backup_restore(backup: str, force: bool, backup_current: bool) -> None:
         sys.exit(1)
 
 
-@backup_cli.command('delete')
-@click.argument('backup', type=click.Path())
-@click.option('--force', is_flag=True, help='Skip confirmation')
+@backup_cli.command("delete")
+@click.argument("backup", type=click.Path())
+@click.option("--force", is_flag=True, help="Skip confirmation")
 def backup_delete(backup: str, force: bool) -> None:
     """Delete a backup.
 
@@ -389,7 +408,9 @@ def backup_delete(backup: str, force: bool) -> None:
     console.print(f"  Name: {backup_path.name}")
     console.print(f"  Size: {backup_info['size'] / 1024 / 1024:.2f} MB")
     console.print(f"  Documents: {backup_info.get('documents', '?')}")
-    console.print(f"  Modified: {backup_info['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+    console.print(
+        f"  Modified: {backup_info['modified'].strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     print()
 
     # Confirmation
@@ -411,10 +432,11 @@ def backup_delete(backup: str, force: bool) -> None:
 # Migrate Command
 # ==============================================================================
 
-@click.command('migrate')
-@click.argument('source', type=click.Path(exists=True), required=False)
-@click.option('--auto', is_flag=True, help='Auto-detect and migrate legacy database')
-@click.option('--backup', is_flag=True, help='Create backup before migration')
+
+@click.command("migrate")
+@click.argument("source", type=click.Path(exists=True), required=False)
+@click.option("--auto", is_flag=True, help="Auto-detect and migrate legacy database")
+@click.option("--backup", is_flag=True, help="Create backup before migration")
 def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
     """Migrate data from another database.
 
@@ -422,7 +444,7 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
 
     If --auto is used, will try to find and migrate from legacy ~/rag-system location.
     """
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
     # Determine source
     if auto:
@@ -461,7 +483,9 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
         if backup:
             console.print("\n[cyan]Creating backup...[/cyan]")
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = get_backup_dir() / f"rag_core_backup_{timestamp}_pre_migrate.db"
+            backup_path = (
+                get_backup_dir() / f"rag_core_backup_{timestamp}_pre_migrate.db"
+            )
             backup_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(db_path, backup_path)
             console.print(f"[green]✓ Backed up to:[/green] {backup_path.name}")
@@ -476,7 +500,9 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
         source_cursor = source_conn.cursor()
 
         # Check if it has documents table
-        source_cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='documents'")
+        source_cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='documents'"
+        )
         if not source_cursor.fetchone():
             console.print("[red]✗ Source database doesn't have 'documents' table[/red]")
             console.print("[yellow]This doesn't look like a RAG database[/yellow]")
@@ -487,7 +513,7 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
         source_cursor.execute("SELECT COUNT(*) FROM documents")
         source_docs = source_cursor.fetchone()[0]
 
-        console.print(f"[green]✓ Connected[/green]")
+        console.print("[green]✓ Connected[/green]")
         console.print(f"  Documents: {source_docs}")
 
         source_conn.close()
@@ -519,6 +545,7 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
 
             # Create destination database
             from rag_memory.core import RAGCore
+
             dest_rag = RAGCore(str(db_path))
 
             progress.update(task, completed=20)
@@ -540,20 +567,22 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
             migrated = 0
             for doc in documents:
                 dest_rag.add_document(
-                    content=doc['content'],
-                    namespace=doc.get('namespace', 'migrated'),
-                    metadata=json.loads(doc.get('metadata', '{}')),
+                    content=doc["content"],
+                    namespace=doc.get("namespace", "migrated"),
+                    metadata=json.loads(doc.get("metadata", "{}")),
                 )
                 migrated += 1
 
                 if migrated % 100 == 0:
-                    progress.update(task, completed=60 + (migrated / len(documents) * 30))
+                    progress.update(
+                        task, completed=60 + (migrated / len(documents) * 30)
+                    )
 
             source_conn.close()
 
             progress.update(task, completed=100)
 
-        console.print(f"\n[green]✓ Migration complete![/green]")
+        console.print("\n[green]✓ Migration complete![/green]")
         console.print(f"  Migrated {migrated} documents")
 
     except Exception as e:
@@ -565,9 +594,14 @@ def migrate_cmd(source: Optional[str], auto: bool, backup: bool) -> None:
 # Recover Command
 # ==============================================================================
 
-@click.command('recover')
-@click.option('--backup-corrupted', is_flag=True, help='Backup corrupted database before recovery')
-@click.option('--from-backup', type=click.Path(exists=True), help='Restore from specific backup')
+
+@click.command("recover")
+@click.option(
+    "--backup-corrupted", is_flag=True, help="Backup corrupted database before recovery"
+)
+@click.option(
+    "--from-backup", type=click.Path(exists=True), help="Restore from specific backup"
+)
 def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
     """Automatic recovery from database corruption.
 
@@ -580,10 +614,12 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
     """
     from rich.progress import Progress, SpinnerColumn, TextColumn
 
-    rprint(Panel.fit(
-        "[bold red]⚠️  Database Recovery[/bold red]",
-        subtitle="[dim]Attempting automatic recovery[/dim]"
-    ))
+    rprint(
+        Panel.fit(
+            "[bold red]⚠️  Database Recovery[/bold red]",
+            subtitle="[dim]Attempting automatic recovery[/dim]",
+        )
+    )
     print()
 
     db_path = get_db_path()
@@ -623,6 +659,7 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
 
             # Verify
             from rag_memory.core import RAGCore
+
             rag = RAGCore(str(db_path))
             stats = rag.get_stats()
             console.print(f"  Documents: {stats.get('documents', 0)}")
@@ -649,6 +686,7 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
 
     try:
         import sqlite3
+
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
 
@@ -720,6 +758,7 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
             task = progress.add_task("Initializing...", total=None)
 
             from rag_memory.core import RAGCore
+
             rag = RAGCore(str(db_path))
 
         console.print("[green]✓ Fresh database created[/green]")
@@ -744,6 +783,7 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
 
                 # Verify
                 from rag_memory.core import RAGCore
+
                 rag = RAGCore(str(db_path))
                 stats = rag.get_stats()
                 console.print(f"  Documents: {stats.get('documents', 0)}")
@@ -751,7 +791,9 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
 
             except Exception as e:
                 console.print(f"[red]✗ Restore failed:[/red] {e}")
-                console.print("[yellow]Fresh database created but data not restored[/yellow]")
+                console.print(
+                    "[yellow]Fresh database created but data not restored[/yellow]"
+                )
     else:
         console.print("[yellow]⚠ No backups found[/yellow]")
         console.print("[yellow]Fresh database created but is empty[/yellow]")
@@ -770,11 +812,12 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
 # Index Command
 # ==============================================================================
 
-@click.command('index')
-@click.argument('path', type=click.Path(exists=True))
-@click.option('--namespace', default='indexed', help='Namespace for indexed documents')
-@click.option('--chunk-size', default=500, help='Maximum characters per chunk')
-@click.option('--force', is_flag=True, help='Re-index even if already indexed')
+
+@click.command("index")
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--namespace", default="indexed", help="Namespace for indexed documents")
+@click.option("--chunk-size", default=500, help="Maximum characters per chunk")
+@click.option("--force", is_flag=True, help="Re-index even if already indexed")
 def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
     """Index a file or directory into the RAG database.
 
@@ -785,14 +828,16 @@ def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
       rag-memory index /path/to/directory/
       rag-memory index ~/Documents/notes.md --namespace personal
     """
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
     target_path = Path(path).resolve()
 
-    rprint(Panel.fit(
-        f"[bold cyan]Indexing: {target_path.name}[/bold cyan]",
-        subtitle=f"[dim]{target_path}[/dim]"
-    ))
+    rprint(
+        Panel.fit(
+            f"[bold cyan]Indexing: {target_path.name}[/bold cyan]",
+            subtitle=f"[dim]{target_path}[/dim]",
+        )
+    )
     print()
 
     # Initialize RAG
@@ -819,7 +864,7 @@ def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
         files_to_index = [target_path]
     elif target_path.is_dir():
         # Find all markdown and text files
-        for ext in ['*.md', '*.txt', '*.rst', '*.py', '*.js', '*.html', '*.css']:
+        for ext in ["*.md", "*.txt", "*.rst", "*.py", "*.js", "*.html", "*.css"]:
             files_to_index.extend(target_path.rglob(ext))
 
     if not files_to_index:
@@ -849,7 +894,7 @@ def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
         for file_path in files_to_index:
             try:
                 # Read file
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 if not content.strip():
@@ -860,10 +905,13 @@ def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
                 # Check if already indexed
                 if not force:
                     import hashlib
+
                     file_hash = hashlib.md5(content.encode()).hexdigest()
 
                     # Check if document with this hash exists
-                    existing = rag.search(f"hash:{file_hash}", namespace=namespace, limit=1)
+                    existing = rag.search(
+                        f"hash:{file_hash}", namespace=namespace, limit=1
+                    )
                     if existing:
                         skipped += 1
                         progress.update(task, advance=1)
@@ -876,11 +924,11 @@ def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
                     namespace=namespace,
                     chunk_size=chunk_size,
                     metadata={
-                        'source': 'file_index',
-                        'file_path': str(file_path),
-                        'file_name': file_path.name,
-                        'indexed_at': datetime.now().isoformat(),
-                    }
+                        "source": "file_index",
+                        "file_path": str(file_path),
+                        "file_name": file_path.name,
+                        "indexed_at": datetime.now().isoformat(),
+                    },
                 )
 
                 indexed += 1
@@ -908,8 +956,8 @@ def index_cmd(path: str, namespace: str, chunk_size: int, force: bool) -> None:
 
 # Export commands for main CLI
 __all__ = [
-    'backup_cli',
-    'migrate_cmd',
-    'recover_cmd',
-    'index_cmd',
+    "backup_cli",
+    "migrate_cmd",
+    "recover_cmd",
+    "index_cmd",
 ]

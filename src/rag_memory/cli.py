@@ -54,7 +54,7 @@ def doctor() -> None:
         db_path = data_dir / "rag_core.db"
 
         console.print(f"[cyan]Database:[/cyan] {db_path}")
-        console.print(f"[cyan]Status:[/cyan] ", end="")
+        console.print("[cyan]Status:[/cyan] ", end="")
 
         if not db_path.exists():
             console.print("[red]✗ Not found[/red]")
@@ -153,8 +153,7 @@ def migrate_from_legacy() -> None:
         data_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize new database
-        rag = RAGCore(str(new_db))
-        # RAGCore initializes automatically in __init__
+        RAGCore(str(new_db))  # Initialize and create database
 
         console.print(f"[cyan]Legacy DB:[/cyan] {legacy_db}")
         console.print(f"[cyan]New DB:[/cyan] {new_db}")
@@ -194,7 +193,9 @@ def export(output: Path, namespace: str | None) -> None:
         with open(output, "w") as f:
             json.dump(documents, f, indent=2, default=str)
 
-        console.print(f"[green]✓ Exported[/green] {len(documents)} documents to {output}")
+        console.print(
+            f"[green]✓ Exported[/green] {len(documents)} documents to {output}"
+        )
 
     except Exception as e:
         console.print(f"[red]✗ Export failed:[/red] {e}")
@@ -241,10 +242,14 @@ def import_data(input: Path) -> None:
 
 @main.command()
 @click.option("--namespace", default=None, help="Namespace to search (default: all)")
-@click.option("--pattern", multiple=True, help="File patterns to index (can use multiple)")
+@click.option(
+    "--pattern", multiple=True, help="File patterns to index (can use multiple)"
+)
 @click.option("--chunk-size", default=2000, help="Maximum characters per chunk")
 @click.option("--force", is_flag=True, help="Re-index all files (skip deduplication)")
-def index_files(namespace: str | None, pattern: tuple, chunk_size: int, force: bool) -> None:
+def index_files(
+    namespace: str | None, pattern: tuple, chunk_size: int, force: bool
+) -> None:
     """Index Hermes memory files into RAG database.
 
     Indexes MEMORY.md, skills, tool docs, and other static knowledge files
@@ -296,12 +301,14 @@ def index_files(namespace: str | None, pattern: tuple, chunk_size: int, force: b
         console.print(f"[cyan]Files indexed:[/cyan] {stats['files_indexed']}")
         console.print(f"[cyan]Chunks added:[/cyan] {stats['chunks_added']}")
 
-        if stats['chunks_skipped'] > 0:
-            console.print(f"[yellow]Chunks skipped (duplicates):[/yellow] {stats['chunks_skipped']}")
+        if stats["chunks_skipped"] > 0:
+            console.print(
+                f"[yellow]Chunks skipped (duplicates):[/yellow] {stats['chunks_skipped']}"
+            )
 
-        if stats['errors']:
+        if stats["errors"]:
             console.print(f"\n[red]Errors:[/red] {len(stats['errors'])}")
-            for error in stats['errors'][:5]:
+            for error in stats["errors"][:5]:
                 console.print(f"  [red]✗[/red] {error}")
 
     except Exception as e:
@@ -309,35 +316,24 @@ def index_files(namespace: str | None, pattern: tuple, chunk_size: int, force: b
         sys.exit(1)
 
 
-# Import extended commands
-from .cli_extended import (
-    setup_cli,
-    install_cli,
-    config_cli,
-    status_cmd,
-    reset_cmd,
-)
-
-# Import Priority 3 commands
-from .cli_priority3 import (
-    backup_cli,
-    migrate_cmd,
-    recover_cmd,
-    index_cmd,
-)
+# Import extended commands (imported here to avoid circular imports)  # noqa: E402
+from .cli_extended import (config_cli, install_cli, reset_cmd, setup_cli,
+                           status_cmd)
+# Import Priority 3 commands (imported here to avoid circular imports)  # noqa: E402
+from .cli_priority3 import backup_cli, index_cmd, migrate_cmd, recover_cmd
 
 # Add extended commands to main group
-main.add_command(setup_cli, name='setup')
-main.add_command(install_cli, name='install')
-main.add_command(config_cli, name='config')
-main.add_command(status_cmd, name='status')
-main.add_command(reset_cmd, name='reset')
+main.add_command(setup_cli, name="setup")
+main.add_command(install_cli, name="install")
+main.add_command(config_cli, name="config")
+main.add_command(status_cmd, name="status")
+main.add_command(reset_cmd, name="reset")
 
 # Add Priority 3 commands
-main.add_command(backup_cli, name='backup')
-main.add_command(migrate_cmd, name='migrate')
-main.add_command(recover_cmd, name='recover')
-main.add_command(index_cmd, name='index')
+main.add_command(backup_cli, name="backup")
+main.add_command(migrate_cmd, name="migrate")
+main.add_command(recover_cmd, name="recover")
+main.add_command(index_cmd, name="index")
 
 
 if __name__ == "__main__":

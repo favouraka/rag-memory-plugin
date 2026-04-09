@@ -3,15 +3,14 @@ Core RAG functionality - TF-IDF + Neural retrieval with sqlite-vec
 This module provides the core search and indexing capabilities with full hybrid support.
 """
 
-import logging
-import sqlite3
 import hashlib
 import json
+import logging
+import sqlite3
 import threading
-from typing import Optional, Dict, Any, List, Tuple
-from datetime import datetime
-from pathlib import Path
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class RAGCore:
         db_path: Optional[str] = None,
         model_path: str = "sentence-transformers/all-MiniLM-L6-v2",
         enable_model_cache: bool = True,
-        pool_size: int = 5
+        pool_size: int = 5,
     ):
         """
         Initialize RAG core.
@@ -77,22 +76,19 @@ class RAGCore:
         Uses thread-local storage for thread safety.
         """
         # Check if thread already has a connection
-        if hasattr(self._local, 'conn') and self._local.conn is not None:
+        if hasattr(self._local, "conn") and self._local.conn is not None:
             yield self._local.conn
             return
 
         # Create new connection for this thread
-        conn = sqlite3.connect(
-            self.db_path,
-            timeout=30.0,
-            check_same_thread=False
-        )
+        conn = sqlite3.connect(self.db_path, timeout=30.0, check_same_thread=False)
         conn.row_factory = sqlite3.Row
 
         # Load sqlite-vec extension
         try:
             conn.enable_load_extension(True)
             import sqlite_vec
+
             sqlite_vec.load(conn)
         except Exception as e:
             logger.warning(f"⚠ Failed to load sqlite-vec: {e}")
@@ -145,8 +141,12 @@ class RAGCore:
             logger.info("✓ Neural embeddings table created")
 
             # Create indexes
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_documents_namespace ON documents(namespace)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_tfidf_terms_term ON tfidf_terms(term)")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_documents_namespace ON documents(namespace)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_tfidf_terms_term ON tfidf_terms(term)"
+            )
 
             conn.commit()
             logger.info("✓ RAG core database initialized")
@@ -163,11 +163,14 @@ class RAGCore:
 
         try:
             from sentence_transformers import SentenceTransformer
+
             logger.info(f"Loading model: {self.model_path}")
             self._model = SentenceTransformer(self.model_path)
             self._embedding_dim = self._model.get_sentence_embedding_dimension()
             self._neural_enabled = True
-            logger.info(f"✓ Model loaded: {self.model_path} (dim={self._embedding_dim})")
+            logger.info(
+                f"✓ Model loaded: {self.model_path} (dim={self._embedding_dim})"
+            )
         except Exception as e:
             logger.warning(f"⚠ Model load failed, using TF-IDF only: {e}")
             self._neural_enabled = False
@@ -199,6 +202,7 @@ class RAGCore:
         # Generate embedding
         try:
             import numpy as np
+
             embedding = self._model.encode(text, show_progress_bar=False)
             embedding_list = embedding.astype(np.float32).tolist()
 
@@ -217,7 +221,7 @@ class RAGCore:
         content: str,
         namespace: str = "default",
         metadata: Optional[Dict[str, Any]] = None,
-        document_id: Optional[str] = None
+        document_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Add a document to RAG index.
@@ -245,7 +249,7 @@ class RAGCore:
                 # Insert document
                 cursor.execute(
                     "INSERT INTO documents (id, namespace, content, metadata) VALUES (?, ?, ?, ?)",
-                    (document_id, namespace, content, metadata_json)
+                    (document_id, namespace, content, metadata_json),
                 )
 
                 # Index for TF-IDF
@@ -261,10 +265,15 @@ class RAGCore:
                     if embedding is not None:
                         try:
                             import numpy as np
+
                             embedding_array = np.array(embedding, dtype=np.float32)
                             cursor.execute(
                                 "INSERT INTO doc_embeddings (doc_id, embedding, model) VALUES (?, ?, ?)",
-                                (document_id, embedding_array.tobytes(), self.model_path)
+                                (
+                                    document_id,
+                                    embedding_array.tobytes(),
+                                    self.model_path,
+                                ),
                             )
                         except Exception as e:
                             logger.warning(f"⚠ Failed to store embedding: {e}")
@@ -272,21 +281,19 @@ class RAGCore:
                 conn.commit()
                 logger.debug(f"✓ Document added: {document_id}")
 
-                return {
-                    "id": document_id,
-                    "namespace": namespace,
-                    "status": "added"
-                }
+                return {"id": document_id, "namespace": namespace, "status": "added"}
 
             except sqlite3.IntegrityError:
                 # Document already exists, update it
                 cursor.execute(
                     "UPDATE documents SET content = ?, metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    (content, metadata_json, document_id)
+                    (content, metadata_json, document_id),
                 )
 
                 # Re-index TF-IDF
-                cursor.execute("DELETE FROM tfidf_terms WHERE document_id = ?", (document_id,))
+                cursor.execute(
+                    "DELETE FROM tfidf_terms WHERE document_id = ?", (document_id,)
+                )
                 self._index_tfidf(cursor, document_id, content)
 
                 # Update embedding
@@ -299,10 +306,15 @@ class RAGCore:
                     if embedding is not None:
                         try:
                             import numpy as np
+
                             embedding_array = np.array(embedding, dtype=np.float32)
                             cursor.execute(
                                 "UPDATE doc_embeddings SET embedding = ?, model = ? WHERE doc_id = ?",
-                                (embedding_array.tobytes(), self.model_path, document_id)
+                                (
+                                    embedding_array.tobytes(),
+                                    self.model_path,
+                                    document_id,
+                                ),
                             )
                         except Exception as e:
                             logger.warning(f"⚠ Failed to update embedding: {e}")
@@ -310,11 +322,7 @@ class RAGCore:
                 conn.commit()
                 logger.debug(f"✓ Document updated: {document_id}")
 
-                return {
-                    "id": document_id,
-                    "namespace": namespace,
-                    "status": "updated"
-                }
+                return {"id": document_id, "namespace": namespace, "status": "updated"}
 
     def _index_tfidf(self, cursor, document_id: str, content: str):
         """
@@ -329,7 +337,7 @@ class RAGCore:
         from collections import Counter
 
         # Simple tokenization - split on non-word characters
-        tokens = re.findall(r'\b\w+\b', content.lower())
+        tokens = re.findall(r"\b\w+\b", content.lower())
 
         # Count term frequencies
         term_freq = Counter(tokens)
@@ -339,7 +347,7 @@ class RAGCore:
             if len(term) > 2:  # Skip very short terms
                 cursor.execute(
                     "INSERT OR REPLACE INTO tfidf_terms (document_id, term, frequency) VALUES (?, ?, ?)",
-                    (document_id, term, freq)
+                    (document_id, term, freq),
                 )
 
     def search(
@@ -348,7 +356,7 @@ class RAGCore:
         namespace: Optional[str] = None,
         mode: str = "hybrid",
         limit: int = 10,
-        tokens: int = 500
+        tokens: int = 500,
     ) -> List[Dict[str, Any]]:
         """
         Search RAG index.
@@ -368,7 +376,9 @@ class RAGCore:
             self._load_model()
 
         if mode == "neural" and not self._neural_enabled:
-            logger.warning("⚠ Neural mode requested but not available, falling back to TF-IDF")
+            logger.warning(
+                "⚠ Neural mode requested but not available, falling back to TF-IDF"
+            )
             mode = "tfidf"
 
         if mode == "hybrid" and not self._neural_enabled:
@@ -389,18 +399,15 @@ class RAGCore:
         char_limit = tokens * avg_chars_per_token
 
         for result in results:
-            content = result.get('content', '')
+            content = result.get("content", "")
             if len(content) > char_limit:
-                result['content'] = content[:char_limit] + "..."
-            result['_namespace'] = result.get('namespace', namespace or 'default')
+                result["content"] = content[:char_limit] + "..."
+            result["_namespace"] = result.get("namespace", namespace or "default")
 
         return results[:limit]
 
     def _search_tfidf(
-        self,
-        query: str,
-        namespace: Optional[str],
-        limit: int
+        self, query: str, namespace: Optional[str], limit: int
     ) -> List[Dict[str, Any]]:
         """
         Search using TF-IDF.
@@ -420,14 +427,14 @@ class RAGCore:
             cursor = conn.cursor()
 
             # Tokenize query
-            query_tokens = re.findall(r'\b\w+\b', query.lower())
+            query_tokens = re.findall(r"\b\w+\b", query.lower())
             query_freq = Counter(query_tokens)
 
             if not query_tokens:
                 return []
 
             # Build SQL query
-            placeholders = ','.join(['?'] * len(query_tokens))
+            placeholders = ",".join(["?"] * len(query_tokens))
 
             if namespace:
                 sql = f"""
@@ -460,22 +467,21 @@ class RAGCore:
 
             results = []
             for row in rows:
-                results.append({
-                    'id': row[0],
-                    'namespace': row[1],
-                    'content': row[2],
-                    'metadata': row[3],
-                    'score': float(row[4]) if row[4] else 0.0,
-                    '_mode': 'tfidf'
-                })
+                results.append(
+                    {
+                        "id": row[0],
+                        "namespace": row[1],
+                        "content": row[2],
+                        "metadata": row[3],
+                        "score": float(row[4]) if row[4] else 0.0,
+                        "_mode": "tfidf",
+                    }
+                )
 
             return results
 
     def _search_neural(
-        self,
-        query: str,
-        namespace: Optional[str],
-        limit: int
+        self, query: str, namespace: Optional[str], limit: int
     ) -> List[Dict[str, Any]]:
         """
         Search using neural embeddings.
@@ -530,24 +536,26 @@ class RAGCore:
                     # Calculate cosine similarity
                     similarity = self._cosine_similarity(query_array, doc_embedding)
 
-                    results.append({
-                        'id': row[0],
-                        'namespace': row[1],
-                        'content': row[2],
-                        'metadata': row[3],
-                        'score': float(similarity),
-                        '_mode': 'neural'
-                    })
+                    results.append(
+                        {
+                            "id": row[0],
+                            "namespace": row[1],
+                            "content": row[2],
+                            "metadata": row[3],
+                            "score": float(similarity),
+                            "_mode": "neural",
+                        }
+                    )
                 except Exception as e:
                     logger.debug(f"Failed to calculate similarity for {row[0]}: {e}")
                     continue
 
             # Sort by similarity score (descending)
-            results.sort(key=lambda x: x['score'], reverse=True)
+            results.sort(key=lambda x: x["score"], reverse=True)
 
             return results[:limit]
 
-    def _cosine_similarity(self, a: 'np.ndarray', b: 'np.ndarray') -> float:
+    def _cosine_similarity(self, a: "np.ndarray", b: "np.ndarray") -> float:
         """
         Calculate cosine similarity between two vectors.
 
@@ -570,10 +578,7 @@ class RAGCore:
         return float(dot_product / (norm_a * norm_b))
 
     def _fuse_results(
-        self,
-        tfidf_results: List[Dict],
-        neural_results: List[Dict],
-        limit: int
+        self, tfidf_results: List[Dict], neural_results: List[Dict], limit: int
     ) -> List[Dict]:
         """
         Fuse TF-IDF and neural results using Reciprocal Rank Fusion (RRF).
@@ -594,29 +599,29 @@ class RAGCore:
 
         # Add TF-IDF scores
         for rank, result in enumerate(tfidf_results):
-            doc_id = result['id']
+            doc_id = result["id"]
             rrf_score = 1.0 / (k + rank + 1)
             scores[doc_id] = scores.get(doc_id, 0) + rrf_score
-            result['_rrf_score'] = scores[doc_id]
+            result["_rrf_score"] = scores[doc_id]
 
         # Add neural scores
         for rank, result in enumerate(neural_results):
-            doc_id = result['id']
+            doc_id = result["id"]
             rrf_score = 1.0 / (k + rank + 1)
             scores[doc_id] = scores.get(doc_id, 0) + rrf_score
 
             # Find result in tfidf_results or add it
-            merged = next((r for r in tfidf_results if r['id'] == doc_id), None)
+            merged = next((r for r in tfidf_results if r["id"] == doc_id), None)
             if merged:
-                merged['_rrf_score'] = scores[doc_id]
-                merged['_mode'] = 'hybrid'
+                merged["_rrf_score"] = scores[doc_id]
+                merged["_mode"] = "hybrid"
             else:
-                result['_rrf_score'] = scores[doc_id]
-                result['_mode'] = 'hybrid'
+                result["_rrf_score"] = scores[doc_id]
+                result["_mode"] = "hybrid"
                 tfidf_results.append(result)
 
         # Sort by RRF score
-        tfidf_results.sort(key=lambda x: x.get('_rrf_score', 0), reverse=True)
+        tfidf_results.sort(key=lambda x: x.get("_rrf_score", 0), reverse=True)
 
         return tfidf_results[:limit]
 
@@ -634,7 +639,7 @@ class RAGCore:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT id, namespace, content, metadata, created_at FROM documents WHERE id = ?",
-                (document_id,)
+                (document_id,),
             )
             row = cursor.fetchone()
 
@@ -642,11 +647,11 @@ class RAGCore:
                 return None
 
             return {
-                'id': row[0],
-                'namespace': row[1],
-                'content': row[2],
-                'metadata': json.loads(row[3]) if row[3] else {},
-                'created_at': row[4]
+                "id": row[0],
+                "namespace": row[1],
+                "content": row[2],
+                "metadata": json.loads(row[3]) if row[3] else {},
+                "created_at": row[4],
             }
 
     def list_namespaces(self) -> List[str]:
@@ -658,7 +663,9 @@ class RAGCore:
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT DISTINCT namespace FROM documents ORDER BY namespace")
+            cursor.execute(
+                "SELECT DISTINCT namespace FROM documents ORDER BY namespace"
+            )
             rows = cursor.fetchall()
             return [row[0] for row in rows]
 
@@ -710,12 +717,12 @@ class RAGCore:
                 "namespaces": ns_count,
                 "tfidf_terms": term_count,
                 "neural_enabled": self._neural_enabled,
-                "model": self.model_path if self._neural_enabled else None
+                "model": self.model_path if self._neural_enabled else None,
             }
 
     def close(self):
         """Close database connection(s)."""
-        if hasattr(self._local, 'conn') and self._local.conn is not None:
+        if hasattr(self._local, "conn") and self._local.conn is not None:
             self._local.conn.close()
             self._local.conn = None
             logger.info("✓ RAG core connection closed")

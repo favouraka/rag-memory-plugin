@@ -12,19 +12,19 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import shutil
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import click
 import yaml
+from rich import print as rprint
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
-from rich import print as rprint
+from rich.table import Table
 
 console = Console()
 
@@ -32,6 +32,7 @@ console = Console()
 # ==============================================================================
 # Utility Functions
 # ==============================================================================
+
 
 def get_hermes_home() -> Path:
     """Get Hermes home directory."""
@@ -62,6 +63,8 @@ def check_sqlite_vec() -> bool:
     """Check if sqlite-vec is installed."""
     try:
         import sqlite_vec
+
+        _ = sqlite_vec  # Mark as intentionally used
         return True
     except ImportError:
         return False
@@ -71,8 +74,9 @@ def check_neural_model() -> bool:
     """Check if neural model is available."""
     try:
         from sentence_transformers import SentenceTransformer
+
         # Try loading the model
-        model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
         return True
     except Exception:
         return False
@@ -82,10 +86,7 @@ def install_sqlite_vec() -> bool:
     """Install sqlite-vec."""
     try:
         subprocess.run(
-            ["pip", "install", "sqlite-vec"],
-            check=True,
-            capture_output=True,
-            text=True
+            ["pip", "install", "sqlite-vec"], check=True, capture_output=True, text=True
         )
         return True
     except subprocess.CalledProcessError:
@@ -99,7 +100,7 @@ def install_neural_dependencies() -> bool:
             ["pip", "install", "sentence-transformers"],
             check=True,
             capture_output=True,
-            text=True
+            text=True,
         )
         return True
     except subprocess.CalledProcessError:
@@ -122,7 +123,9 @@ def create_default_config() -> dict:
         "neural": {
             "enabled": True,
             "model": "sentence-transformers/all-MiniLM-L6-v2",
-            "cache_dir": str(Path.home() / ".cache" / "torch" / "sentence_transformers"),
+            "cache_dir": str(
+                Path.home() / ".cache" / "torch" / "sentence_transformers"
+            ),
         },
         "indexing": {
             "auto_index": True,
@@ -136,7 +139,7 @@ def load_config() -> dict:
     """Load configuration from file."""
     config_path = get_config_path()
     if config_path.exists():
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             return yaml.safe_load(f)
     return create_default_config()
 
@@ -145,7 +148,7 @@ def save_config(config: dict) -> None:
     """Save configuration to file."""
     config_path = get_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
 
@@ -157,6 +160,7 @@ def validate_database() -> tuple[bool, str]:
 
     try:
         import sqlite3
+
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
 
@@ -165,7 +169,7 @@ def validate_database() -> tuple[bool, str]:
         tables = cursor.fetchall()
 
         # Check for required tables
-        required_tables = ['documents', 'namespaces', 'tfidf_terms', 'metadata']
+        required_tables = ["documents", "namespaces", "tfidf_terms", "metadata"]
         existing_tables = [t[0] for t in tables]
 
         missing_tables = set(required_tables) - set(existing_tables)
@@ -190,6 +194,7 @@ def validate_database() -> tuple[bool, str]:
 # Setup Command
 # ==============================================================================
 
+
 @click.group()
 def setup_cli():
     """Setup commands."""
@@ -197,19 +202,24 @@ def setup_cli():
 
 
 @setup_cli.command()
-@click.option('--skip-prompts', is_flag=True, help='Run non-interactively with defaults')
-@click.option('--reinit', is_flag=True, help='Force reinitialize database')
-@click.option('--sqlite-vec', is_flag=True, help='Install sqlite-vec only')
-@click.option('--neural', is_flag=True, help='Install neural model only')
+@click.option(
+    "--skip-prompts", is_flag=True, help="Run non-interactively with defaults"
+)
+@click.option("--reinit", is_flag=True, help="Force reinitialize database")
+@click.option("--sqlite-vec", is_flag=True, help="Install sqlite-vec only")
+@click.option("--neural", is_flag=True, help="Install neural model only")
 def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> None:
     """Interactive setup wizard for RAG Memory plugin."""
     from rich.progress import Progress, SpinnerColumn, TextColumn
 
     with console.status("[bold green]Initializing setup...", spinner="dots"):
         import time
+
         time.sleep(0.5)
 
-    rprint(Panel.fit("[bold cyan]Welcome to RAG Memory Plugin Setup!", style="bold cyan"))
+    rprint(
+        Panel.fit("[bold cyan]Welcome to RAG Memory Plugin Setup!", style="bold cyan")
+    )
     print()
 
     # ==============================================================================
@@ -222,10 +232,12 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
     config_path = get_config_path()
 
     if db_path.exists() and not reinit:
-        rprint(Panel.fit(
-            f"[yellow]⚠ Database already exists at:[/yellow]\n{db_path}",
-            title="Existing Installation"
-        ))
+        rprint(
+            Panel.fit(
+                f"[yellow]⚠ Database already exists at:[/yellow]\n{db_path}",
+                title="Existing Installation",
+            )
+        )
 
         if not skip_prompts and not Confirm.ask("Reinitialize database?"):
             console.print("[green]Keeping existing database[/green]")
@@ -316,8 +328,12 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
                     console.print("[green]✓ Neural dependencies installed[/green]")
                 else:
                     console.print("[red]✗ Failed to install neural dependencies[/red]")
-                    console.print("[yellow]You can install it later: rag-memory install neural[/yellow]")
-                    console.print("[yellow]TF-IDF search will be used as fallback[/yellow]")
+                    console.print(
+                        "[yellow]You can install it later: rag-memory install neural[/yellow]"
+                    )
+                    console.print(
+                        "[yellow]TF-IDF search will be used as fallback[/yellow]"
+                    )
     print()
 
     # ==============================================================================
@@ -338,21 +354,21 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
     else:
         config = create_default_config()
 
-    if not config_path.exists() or (not skip_prompts and Confirm.ask("Review configuration?", default=False)):
+    if not config_path.exists() or (
+        not skip_prompts and Confirm.ask("Review configuration?", default=False)
+    ):
         console.print("\n[cyan]Configuration options:[/cyan]")
         console.print("Press Enter for defaults\n")
 
         # Database path
         db_path_input = Prompt.ask(
-            "Database path",
-            default=str(config["database"]["path"])
+            "Database path", default=str(config["database"]["path"])
         )
         config["database"]["path"] = db_path_input
 
         # Max results
         max_results = Prompt.ask(
-            "Max search results",
-            default=str(config["search"]["max_results"])
+            "Max search results", default=str(config["search"]["max_results"])
         )
         config["search"]["max_results"] = int(max_results)
 
@@ -360,15 +376,14 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
         mode = Prompt.ask(
             "Default search mode",
             choices=["tfidf", "neural", "hybrid"],
-            default=config["search"]["default_mode"]
+            default=config["search"]["default_mode"],
         )
         config["search"]["default_mode"] = mode
 
         # Neural enabled
         if check_neural_model():
             neural_enabled = Confirm.ask(
-                "Enable neural search",
-                default=config["neural"]["enabled"]
+                "Enable neural search", default=config["neural"]["enabled"]
             )
             config["neural"]["enabled"] = neural_enabled
 
@@ -379,7 +394,7 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
         # Save default config if doesn't exist
         if not config_path.exists():
             save_config(create_default_config())
-            console.print(f"[green]✓ Default configuration saved[/green]")
+            console.print("[green]✓ Default configuration saved[/green]")
     print()
 
     # ==============================================================================
@@ -394,8 +409,22 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
 
     table.add_row("Database path", str(db_path))
     table.add_row("Config path", str(config_path))
-    table.add_row("sqlite-vec", "[green]✓ Installed[/green]" if check_sqlite_vec() else "[red]✗ Not installed[/red]")
-    table.add_row("Neural model", "[green]✓ Available[/green]" if check_neural_model() else "[red]✗ Not available[/red]")
+    table.add_row(
+        "sqlite-vec",
+        (
+            "[green]✓ Installed[/green]"
+            if check_sqlite_vec()
+            else "[red]✗ Not installed[/red]"
+        ),
+    )
+    table.add_row(
+        "Neural model",
+        (
+            "[green]✓ Available[/green]"
+            if check_neural_model()
+            else "[red]✗ Not available[/red]"
+        ),
+    )
 
     console.print(table)
     print()
@@ -409,7 +438,7 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
     print()
     console.print("[cyan]Next steps:[/cyan]")
     console.print("  1. Run: rag-memory doctor")
-    console.print("  2. Search: rag-memory search \"your query\"")
+    console.print('  2. Search: rag-memory search "your query"')
     print()
 
 
@@ -417,17 +446,19 @@ def setup(skip_prompts: bool, reinit: bool, sqlite_vec: bool, neural: bool) -> N
 # Install Neural Command
 # ==============================================================================
 
+
 @click.group()
 def install_cli():
     """Install dependencies."""
     pass
 
 
-@install_cli.command('neural')
-@click.option('--force', is_flag=True, help='Reinstall even if already available')
+@install_cli.command("neural")
+@click.option("--force", is_flag=True, help="Reinstall even if already available")
 def install_neural(force: bool) -> None:
     """Install neural search dependencies and model."""
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, DownloadColumn, TransferSpeedColumn
+    from rich.progress import (Progress,
+                               SpinnerColumn, TextColumn)
 
     rprint(Panel.fit("[bold cyan]Neural Search Installation", style="bold cyan"))
     print()
@@ -455,7 +486,7 @@ def install_neural(force: bool) -> None:
                 ["pip", "install", "sentence-transformers"],
                 check=True,
                 capture_output=True,
-                text=True
+                text=True,
             )
 
         console.print("[green]✓ sentence-transformers installed[/green]")
@@ -481,7 +512,7 @@ def install_neural(force: bool) -> None:
         ) as progress:
             task = progress.add_task("Downloading model...", total=None)
 
-            model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+            model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
         console.print("[green]✓ Model downloaded successfully[/green]")
     except Exception as e:
@@ -518,13 +549,14 @@ def install_neural(force: bool) -> None:
 # Config Command
 # ==============================================================================
 
+
 @click.group()
 def config_cli():
     """Configuration management."""
     pass
 
 
-@config_cli.command('show')
+@config_cli.command("show")
 def config_show() -> None:
     """Show current configuration."""
     config_path = get_config_path()
@@ -542,7 +574,7 @@ def config_show() -> None:
     console.print(yaml.dump(config, default_flow_style=False))
 
 
-@config_cli.command('edit')
+@config_cli.command("edit")
 def config_edit() -> None:
     """Edit configuration in default editor."""
     config_path = get_config_path()
@@ -554,7 +586,7 @@ def config_edit() -> None:
         return
 
     # Get editor
-    editor = os.environ.get('EDITOR', 'nano')
+    editor = os.environ.get("EDITOR", "nano")
 
     console.print(f"[cyan]Opening {config_path} in {editor}...[/cyan]")
     print()
@@ -574,9 +606,9 @@ def config_edit() -> None:
         console.print("[red]✗ Editor exited with error[/red]")
 
 
-@config_cli.command('set')
-@click.argument('key')
-@click.argument('value')
+@config_cli.command("set")
+@click.argument("key")
+@click.argument("value")
 def config_set(key: str, value: str) -> None:
     """Set a configuration value."""
     config_path = get_config_path()
@@ -591,7 +623,7 @@ def config_set(key: str, value: str) -> None:
         config = load_config()
 
         # Parse key (e.g., "database.path" or "search.max_results")
-        keys = key.split('.')
+        keys = key.split(".")
         current = config
 
         for k in keys[:-1]:
@@ -617,8 +649,8 @@ def config_set(key: str, value: str) -> None:
         console.print(f"[red]✗ Failed to set value:[/red] {e}")
 
 
-@config_cli.command('reset')
-@click.option('--confirm', is_flag=True, help='Skip confirmation')
+@config_cli.command("reset")
+@click.option("--confirm", is_flag=True, help="Skip confirmation")
 def config_reset(confirm: bool) -> None:
     """Reset configuration to defaults."""
     if not confirm:
@@ -632,7 +664,7 @@ def config_reset(confirm: bool) -> None:
     console.print("[green]✓ Configuration reset to defaults[/green]")
 
 
-@config_cli.command('validate')
+@config_cli.command("validate")
 def config_validate() -> None:
     """Validate configuration."""
     config_path = get_config_path()
@@ -647,9 +679,9 @@ def config_validate() -> None:
 
         # Check required keys
         required_keys = [
-            ('database', 'path'),
-            ('search', 'max_results'),
-            ('neural', 'enabled'),
+            ("database", "path"),
+            ("search", "max_results"),
+            ("neural", "enabled"),
         ]
 
         all_valid = True
@@ -657,7 +689,9 @@ def config_validate() -> None:
             current = config
             for key in key_path:
                 if key not in current:
-                    console.print(f"[red]✗ Missing required key: {'.'.join(key_path)}[/red]")
+                    console.print(
+                        f"[red]✗ Missing required key: {'.'.join(key_path)}[/red]"
+                    )
                     all_valid = False
                     break
                 current = current[key]
@@ -676,9 +710,10 @@ def config_validate() -> None:
 # Status Command
 # ==============================================================================
 
-@click.command('status')
-@click.option('--json', 'json_output', is_flag=True, help='JSON output')
-@click.option('--quiet', is_flag=True, help='Exit code only, no output')
+
+@click.command("status")
+@click.option("--json", "json_output", is_flag=True, help="JSON output")
+@click.option("--quiet", is_flag=True, help="Exit code only, no output")
 def status_cmd(json_output: bool, quiet: bool) -> None:
     """Quick health check."""
     if quiet:
@@ -713,6 +748,7 @@ def status_cmd(json_output: bool, quiet: bool) -> None:
         if db_path.exists():
             try:
                 from rag_memory.core import RAGCore
+
                 rag = RAGCore(str(db_path))
                 stats = rag.get_stats()
                 status_info["database"]["documents"] = stats.get("documents", 0)
@@ -746,6 +782,7 @@ def status_cmd(json_output: bool, quiet: bool) -> None:
 
         try:
             from rag_memory.core import RAGCore
+
             rag = RAGCore(str(db_path))
             stats = rag.get_stats()
             console.print(f"  Documents: {stats.get('documents', 0)}")
@@ -773,6 +810,7 @@ def status_cmd(json_output: bool, quiet: bool) -> None:
         console.print("[green]✓ Enabled[/green]")
         try:
             from rag_memory.core import RAGCore
+
             if db_path.exists():
                 rag = RAGCore(str(db_path))
                 stats = rag.get_stats()
@@ -802,18 +840,21 @@ def status_cmd(json_output: bool, quiet: bool) -> None:
 # Reset Command
 # ==============================================================================
 
-@click.command('reset')
-@click.option('--force', is_flag=True, help='Skip confirmation')
-@click.option('--no-backup', is_flag=True, help='Skip backup')
-@click.option('--keep-config', is_flag=True, help='Keep configuration')
+
+@click.command("reset")
+@click.option("--force", is_flag=True, help="Skip confirmation")
+@click.option("--no-backup", is_flag=True, help="Skip backup")
+@click.option("--keep-config", is_flag=True, help="Keep configuration")
 def reset_cmd(force: bool, no_backup: bool, keep_config: bool) -> None:
     """Reset database (DELETE ALL DATA)."""
     from rich.progress import Progress, SpinnerColumn, TextColumn
 
-    rprint(Panel.fit(
-        "[bold red]⚠️  DATABASE RESET[/bold red]",
-        subtitle="[dim]This will DELETE all data[/dim]"
-    ))
+    rprint(
+        Panel.fit(
+            "[bold red]⚠️  DATABASE RESET[/bold red]",
+            subtitle="[dim]This will DELETE all data[/dim]",
+        )
+    )
     print()
 
     db_path = get_db_path()
@@ -825,6 +866,7 @@ def reset_cmd(force: bool, no_backup: bool, keep_config: bool) -> None:
     # Show stats before reset
     try:
         from rag_memory.core import RAGCore
+
         rag = RAGCore(str(db_path))
         stats = rag.get_stats()
 
@@ -877,6 +919,7 @@ def reset_cmd(force: bool, no_backup: bool, keep_config: bool) -> None:
             task = progress.add_task("Initializing...", total=None)
 
             from rag_memory.core import RAGCore
+
             rag = RAGCore(str(db_path))
 
         console.print("[green]✓ Fresh database created[/green]")
@@ -905,9 +948,9 @@ def reset_cmd(force: bool, no_backup: bool, keep_config: bool) -> None:
 
 # Export commands for main CLI
 __all__ = [
-    'setup_cli',
-    'install_cli',
-    'config_cli',
-    'status_cmd',
-    'reset_cmd',
+    "setup_cli",
+    "install_cli",
+    "config_cli",
+    "status_cmd",
+    "reset_cmd",
 ]

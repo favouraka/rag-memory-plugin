@@ -3,8 +3,8 @@ Namespace Isolation for RAG System
 Ensures proper scoping for peers, sessions, and RAG namespaces
 """
 
-from typing import Optional, Dict, Any, List
 import sqlite3
+from typing import Any, Dict, List, Optional
 
 
 class NamespaceIsolation:
@@ -86,12 +86,7 @@ class NamespaceIsolation:
         return True
 
     def search_in_namespace(
-        self,
-        rag_instance,
-        namespace: str,
-        query: str,
-        limit: int = 10,
-        **kwargs
+        self, rag_instance, namespace: str, query: str, limit: int = 10, **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Perform search within a specific namespace
@@ -106,26 +101,18 @@ class NamespaceIsolation:
         Returns:
             List of search results
         """
-        if not hasattr(rag_instance, 'search'):
+        if not hasattr(rag_instance, "search"):
             return []
 
         # Perform search with namespace constraint
         results = rag_instance.search(
-            namespace=namespace,
-            query=query,
-            limit=limit,
-            **kwargs
+            namespace=namespace, query=query, limit=limit, **kwargs
         )
 
         return results
 
     def search_peer_namespace(
-        self,
-        rag_instance,
-        peer_id: str,
-        query: str,
-        limit: int = 10,
-        **kwargs
+        self, rag_instance, peer_id: str, query: str, limit: int = 10, **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Search within a peer's namespace
@@ -142,20 +129,11 @@ class NamespaceIsolation:
         """
         namespace = self.get_peer_namespace(peer_id)
         return self.search_in_namespace(
-            rag_instance,
-            namespace=namespace,
-            query=query,
-            limit=limit,
-            **kwargs
+            rag_instance, namespace=namespace, query=query, limit=limit, **kwargs
         )
 
     def search_session_namespace(
-        self,
-        rag_instance,
-        session_id: str,
-        query: str,
-        limit: int = 10,
-        **kwargs
+        self, rag_instance, session_id: str, query: str, limit: int = 10, **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Search within a session's namespace
@@ -172,11 +150,7 @@ class NamespaceIsolation:
         """
         namespace = self.get_session_namespace(session_id)
         return self.search_in_namespace(
-            rag_instance,
-            namespace=namespace,
-            query=query,
-            limit=limit,
-            **kwargs
+            rag_instance, namespace=namespace, query=query, limit=limit, **kwargs
         )
 
     def get_cross_namespace_results(
@@ -185,7 +159,7 @@ class NamespaceIsolation:
         namespaces: List[str],
         query: str,
         limit_per_namespace: int = 5,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Get results from multiple namespaces
@@ -208,22 +182,19 @@ class NamespaceIsolation:
                 namespace=namespace,
                 query=query,
                 limit=limit_per_namespace,
-                **kwargs
+                **kwargs,
             )
 
             # Tag results with namespace
             for result in results:
-                result['_namespace'] = namespace
+                result["_namespace"] = namespace
 
             all_results.extend(results)
 
         return all_results
 
     def validate_namespace_access(
-        self,
-        peer_id: Optional[str],
-        session_id: Optional[str],
-        target_namespace: str
+        self, peer_id: Optional[str], session_id: Optional[str], target_namespace: str
     ) -> bool:
         """
         Validate if a peer/session can access a namespace
@@ -261,9 +232,7 @@ class NamespaceIsolation:
         return False
 
     def get_accessible_namespaces(
-        self,
-        peer_id: Optional[str] = None,
-        session_id: Optional[str] = None
+        self, peer_id: Optional[str] = None, session_id: Optional[str] = None
     ) -> List[str]:
         """
         Get list of namespaces accessible to a peer/session
@@ -289,9 +258,7 @@ class NamespaceIsolation:
         return namespaces
 
     def filter_results_by_namespace(
-        self,
-        results: List[Dict[str, Any]],
-        allowed_namespaces: List[str]
+        self, results: List[Dict[str, Any]], allowed_namespaces: List[str]
     ) -> List[Dict[str, Any]]:
         """
         Filter search results to only include allowed namespaces
@@ -304,8 +271,9 @@ class NamespaceIsolation:
             Filtered list of results
         """
         return [
-            result for result in results
-            if result.get('_namespace') in allowed_namespaces
+            result
+            for result in results
+            if result.get("_namespace") in allowed_namespaces
         ]
 
 
@@ -315,11 +283,7 @@ class IsolatedSearch:
     Ensures all searches are properly scoped
     """
 
-    def __init__(
-        self,
-        rag_instance,
-        isolation: NamespaceIsolation
-    ):
+    def __init__(self, rag_instance, isolation: NamespaceIsolation):
         """
         Initialize isolated search
 
@@ -337,7 +301,7 @@ class IsolatedSearch:
         session_id: Optional[str] = None,
         limit: int = 10,
         cross_namespace: bool = False,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Perform isolated search
@@ -356,8 +320,7 @@ class IsolatedSearch:
         if cross_namespace:
             # Search across all accessible namespaces
             namespaces = self.isolation.get_accessible_namespaces(
-                peer_id=peer_id,
-                session_id=session_id
+                peer_id=peer_id, session_id=session_id
             )
 
             if not namespaces:
@@ -368,14 +331,16 @@ class IsolatedSearch:
                 namespaces=namespaces,
                 query=query,
                 limit_per_namespace=limit // max(1, len(namespaces)),
-                **kwargs
+                **kwargs,
             )
 
             return results
         else:
             # Search in specific namespace
             if peer_id and session_id:
-                namespace = self.isolation.get_peer_session_namespace(peer_id, session_id)
+                namespace = self.isolation.get_peer_session_namespace(
+                    peer_id, session_id
+                )
             elif peer_id:
                 namespace = self.isolation.get_peer_namespace(peer_id)
             elif session_id:
@@ -385,11 +350,7 @@ class IsolatedSearch:
                 return []
 
             return self.isolation.search_in_namespace(
-                self.rag,
-                namespace=namespace,
-                query=query,
-                limit=limit,
-                **kwargs
+                self.rag, namespace=namespace, query=query, limit=limit, **kwargs
             )
 
     def add_document(
@@ -397,7 +358,7 @@ class IsolatedSearch:
         content: str,
         peer_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         Add document with namespace isolation
@@ -418,13 +379,9 @@ class IsolatedSearch:
         elif session_id:
             namespace = self.isolation.get_session_namespace(session_id)
         else:
-            namespace = kwargs.get('namespace', 'default')
+            namespace = kwargs.get("namespace", "default")
 
-        return self.rag.add_document(
-            namespace=namespace,
-            content=content,
-            **kwargs
-        )
+        return self.rag.add_document(namespace=namespace, content=content, **kwargs)
 
 
 if __name__ == "__main__":
@@ -432,11 +389,11 @@ if __name__ == "__main__":
     print("Namespace Isolation - Quick Test")
     print("=" * 50)
 
-    import tempfile
     import os
+    import tempfile
 
     # Create temp database
-    temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+    temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
     db_path = temp_db.name
     temp_db.close()
 
@@ -448,29 +405,30 @@ if __name__ == "__main__":
         print("\n✓ Namespace generation:")
         print(f"  Peer namespace: {isolation.get_peer_namespace('alice')}")
         print(f"  Session namespace: {isolation.get_session_namespace('chat-1')}")
-        print(f"  Combined namespace: {isolation.get_peer_session_namespace('alice', 'chat-1')}")
+        print(
+            f"  Combined namespace: {isolation.get_peer_session_namespace('alice', 'chat-1')}"
+        )
 
         # Test namespace validation
         print("\n✓ Namespace validation:")
         valid = isolation.validate_namespace_access(
-            peer_id='alice',
+            peer_id="alice",
             session_id=None,
-            target_namespace=isolation.get_peer_namespace('alice')
+            target_namespace=isolation.get_peer_namespace("alice"),
         )
         print(f"  Alice can access peer_alice: {valid}")
 
         invalid = isolation.validate_namespace_access(
-            peer_id='alice',
+            peer_id="alice",
             session_id=None,
-            target_namespace=isolation.get_peer_namespace('bob')
+            target_namespace=isolation.get_peer_namespace("bob"),
         )
         print(f"  Alice can access peer_bob: {invalid}")
 
         # Test accessible namespaces
         print("\n✓ Accessible namespaces:")
         namespaces = isolation.get_accessible_namespaces(
-            peer_id='alice',
-            session_id='chat-1'
+            peer_id="alice", session_id="chat-1"
         )
         for ns in namespaces:
             print(f"  - {ns}")
@@ -478,14 +436,13 @@ if __name__ == "__main__":
         # Test filtering
         print("\n✓ Result filtering:")
         results = [
-            {'_namespace': 'peer_alice', 'content': 'Alice message'},
-            {'_namespace': 'peer_bob', 'content': 'Bob message'},
-            {'_namespace': 'session_chat-1', 'content': 'Chat message'}
+            {"_namespace": "peer_alice", "content": "Alice message"},
+            {"_namespace": "peer_bob", "content": "Bob message"},
+            {"_namespace": "session_chat-1", "content": "Chat message"},
         ]
 
         filtered = isolation.filter_results_by_namespace(
-            results,
-            ['peer_alice', 'session_chat-1']
+            results, ["peer_alice", "session_chat-1"]
         )
 
         print(f"  Original: {len(results)} results")

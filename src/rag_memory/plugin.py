@@ -29,7 +29,6 @@ from the legacy ~/rag-system directory if it exists.
 from __future__ import annotations
 
 import logging
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -63,6 +62,7 @@ _initialized: bool = False
 # --------------------------------------------------------------------------- #
 # Plugin registration
 # --------------------------------------------------------------------------- #
+
 
 def register(context: Any) -> None:
     """Initialize the RAG Memory plugin.
@@ -126,7 +126,7 @@ def register(context: Any) -> None:
         logger.debug("✓ RAG Memory hooks registered")
 
     # Register tools
-    from rag_memory.tools import schemas, handlers
+    from rag_memory.tools import handlers, schemas
 
     context.register_tool(
         name="rag_search",
@@ -148,15 +148,15 @@ def register(context: Any) -> None:
         schema=schemas.RAG_FLUSH,
         handler=handlers.rag_flush_wrapper(_rag),
     )
-    logger.debug(f"✓ RAG Memory tools registered: rag_search, rag_add_document, rag_stats, rag_flush")
+    logger.debug(
+        "✓ RAG Memory tools registered: rag_search, rag_add_document, rag_stats, rag_flush"
+    )
 
     # Register cron job for periodic file indexing
     if _config.get("auto_index_files", True):
         try:
             from rag_memory.core.cron_integration import (
-                setup_cron_job,
-                register_session_hook,
-            )
+                register_session_hook, setup_cron_job)
 
             # Register session start hook for file indexing
             register_session_hook(context)
@@ -172,6 +172,7 @@ def register(context: Any) -> None:
 # --------------------------------------------------------------------------- #
 # Hook implementations
 # --------------------------------------------------------------------------- #
+
 
 def _on_pre_llm_call(event: dict[str, Any], context: Any) -> None:
     """Inject relevant context before LLM call.
@@ -296,7 +297,9 @@ def _on_session_start(event: dict[str, Any], context: Any) -> None:
             try:
                 from rag_memory.core import index_hermes_files
 
-                hermes_home = Path(getattr(context, "hermes_home", Path.home() / ".hermes"))
+                hermes_home = Path(
+                    getattr(context, "hermes_home", Path.home() / ".hermes")
+                )
                 logger.info("📂 Indexing Hermes memory files...")
 
                 stats = index_hermes_files(
@@ -341,6 +344,7 @@ def _on_session_end(event: dict[str, Any], context: Any) -> None:
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
 
 def _now() -> str:
     """Get current ISO timestamp."""
