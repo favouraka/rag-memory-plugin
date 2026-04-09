@@ -755,11 +755,11 @@ def recover_cmd(backup_corrupted: bool, from_backup: Optional[str]) -> None:
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task("Initializing...", total=None)
+            progress.add_task("Initializing...", total=None)
 
             from rag_memory.core import RAGCore
 
-            rag = RAGCore(str(db_path))
+            RAGCore(str(db_path))  # Initialize database
 
         console.print("[green]✓ Fresh database created[/green]")
 
