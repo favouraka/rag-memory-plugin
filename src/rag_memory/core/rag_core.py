@@ -11,9 +11,12 @@ import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from .cache import PerformanceMetrics, QueryCache
+
+if TYPE_CHECKING:
+    import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -448,14 +451,12 @@ class RAGCore:
             List of results with scores
         """
         import re
-        from collections import Counter
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
             # Tokenize query
             query_tokens = re.findall(r"\b\w+\b", query.lower())
-            query_freq = Counter(query_tokens)
 
             if not query_tokens:
                 return []

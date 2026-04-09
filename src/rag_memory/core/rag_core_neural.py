@@ -1,6 +1,6 @@
 """
 Core RAG functionality - TF-IDF + Neural retrieval with sqlite-vec
-This module provides the core search and indexing capabilities with full hybrid support.
+This module provides core search and indexing capabilities with full hybrid support.
 """
 
 import hashlib
@@ -10,7 +10,10 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -421,14 +424,12 @@ class RAGCore:
             List of results with scores
         """
         import re
-        from collections import Counter
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
             # Tokenize query
             query_tokens = re.findall(r"\b\w+\b", query.lower())
-            query_freq = Counter(query_tokens)
 
             if not query_tokens:
                 return []
