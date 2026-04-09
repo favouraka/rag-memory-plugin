@@ -25,7 +25,7 @@
 
 ### Method 1: Installation Script (Recommended ⭐)
 
-**Easiest method - automatically detects your environment:**
+**Easiest method - automatically sets up virtual environment:**
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/favouraka/rag-memory-plugin/main/install.sh | bash
@@ -33,33 +33,53 @@ curl -sSL https://raw.githubusercontent.com/favouraka/rag-memory-plugin/main/ins
 
 **What it does:**
 - Checks Python version (requires 3.10+)
-- Detects your Python environment
-- Installs using the best method for your system:
-  1. User-space installation (`pip install --user`)
-  2. Virtual environment (`~/.hermes-venv`)
-  3. System installation (as last resort)
-- Runs setup wizard automatically
-- Verifies installation
+- Creates virtual environment at `~/.rag-memory`
+- Installs package with neural search
+- Adds rag-memory to PATH in your shell config
+- Shows activation command
 
-### Method 2: Manual Installation
-
-**Install from GitHub:**
-
+**After installation:**
 ```bash
-# With neural search (recommended)
-pip install --user git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
+# Activate in current session
+source ~/.bashrc    # or ~/.zshrc for zsh users
 
-# Or with virtual environment
-python3 -m venv ~/.hermes-venv
-source ~/.hermes-venv/bin/activate
-pip install git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
+# Or restart your terminal
 ```
 
-### Method 3: Clone and Install
+### Method 2: Manual Installation with Virtual Environment
+
+**Create venv and install:**
+
+```bash
+# Create virtual environment
+python3 -m venv ~/.rag-memory
+source ~/.rag-memory/bin/activate
+
+# Install with neural search
+pip install git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
+
+# Add to PATH permanently
+echo 'export PATH="$HOME/.rag-memory/bin:$PATH"' >> ~/.bashrc
+
+# Deactivate when done
+deactivate
+```
+
+**After installation:**
+```bash
+# Activate in current session
+source ~/.bashrc
+
+# Or restart your terminal
+```
+
+### Method 3: Clone and Install (Development)
 
 ```bash
 git clone https://github.com/favouraka/rag-memory-plugin.git
 cd rag-memory-plugin
+python3 -m venv ~/.rag-memory
+source ~/.rag-memory/bin/activate
 pip install -e ".[neural]"
 ```
 
@@ -318,6 +338,26 @@ rag-memory migrate /path/to/old.db --backup
 
 ---
 
+## 🔄 Migration from Old Installation
+
+**Previously installed with `--user` or `~/.hermes-venv`?**
+
+See [MIGRATION.md](MIGRATION.md) for step-by-step migration guide to the new `~/.rag-memory` location.
+
+**Quick migration script:**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/favouraka/rag-memory-plugin/main/migrate_to_new_venv.sh | bash
+```
+
+This will:
+- Remove old installation (~/.hermes-venv or user-space)
+- Preserve all your data (database, config, backups)
+- Install to new location (~/.rag-memory)
+- Update your PATH
+
+---
+
 ## 🏗️ Architecture
 
 ```
@@ -394,8 +434,51 @@ rag-memory backup restore <backup_file>
 ### Permission Errors
 
 ```bash
-# Try user-space installation
-pip install --user git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
+# Use virtual environment instead
+python3 -m venv ~/.rag-memory
+source ~/.rag-memory/bin/activate
+pip install git+https://github.com/favouraka/rag-memory-plugin.git#egg=rag-memory-plugin[neural]
+```
+
+### Virtual Environment Location
+
+**Where is everything installed?**
+
+```bash
+# Virtual environment
+~/.rag-memory/
+├── bin/
+│   ├── python3
+│   ├── pip3
+│   └── rag-memory
+├── lib/
+│   └── python3.x/site-packages/
+│       └── rag_memory/
+└── pyvenv.cfg
+
+# Data and configuration (separate from venv)
+~/.hermes/plugins/rag-memory/
+├── rag_core.db
+├── config.yaml
+└── backups/
+```
+
+**Recreate virtual environment:**
+```bash
+rm -rf ~/.rag-memory
+curl -sSL https://raw.githubusercontent.com/favouraka/rag-memory-plugin/main/install.sh | bash
+```
+
+**Uninstall completely:**
+```bash
+# Remove virtual environment
+rm -rf ~/.rag-memory
+
+# Remove data and backups
+rm -rf ~/.hermes/plugins/rag-memory/
+
+# Remove from PATH
+# Edit ~/.bashrc (or ~/.zshrc) and remove the export PATH line
 ```
 
 ---
@@ -407,6 +490,8 @@ pip install --user git+https://github.com/favouraka/rag-memory-plugin.git#egg=ra
 ```bash
 git clone https://github.com/favouraka/rag-memory-plugin.git
 cd rag-memory-plugin
+python3 -m venv ~/.rag-memory
+source ~/.rag-memory/bin/activate
 pip install -e ".[dev]"
 ```
 
