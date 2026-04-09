@@ -317,16 +317,21 @@ def index_files(
 
 
 # Import extended commands (imported here to avoid circular imports)
-from .cli_extended import (
+from .cli_extended import (  # noqa: E402
     config_cli,
     install_cli,
-    reset_cmd,  # noqa: E402
+    reset_cmd,
     setup_cli,
     status_cmd,
 )
 
 # Import Priority 3 commands (imported here to avoid circular imports)
-from .cli_priority3 import backup_cli, index_cmd, migrate_cmd, recover_cmd  # noqa: E402
+from .cli_priority3 import (  # noqa: E402
+    backup_cli,
+    index_cmd,
+    migrate_cmd,
+    recover_cmd,
+)
 
 # Add extended commands to main group
 main.add_command(setup_cli, name="setup")
