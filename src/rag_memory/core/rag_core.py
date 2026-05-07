@@ -176,7 +176,7 @@ class RAGCore:
 
             logger.info(f"Loading model: {self.model_path}")
             self._model = SentenceTransformer(self.model_path)
-            self._embedding_dim = self._model.get_sentence_embedding_dimension()
+            self._embedding_dim = self._model.get_embedding_dimension()
             self._neural_enabled = True
             logger.info(
                 f"✓ Model loaded: {self.model_path} (dim={self._embedding_dim})"
